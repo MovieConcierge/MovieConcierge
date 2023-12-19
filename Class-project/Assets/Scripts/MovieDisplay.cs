@@ -2,27 +2,34 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEditor;
 using TMPro;
 
 public class MovieDisplay : MonoBehaviour
 {
-    public TextMeshProUGUI screenTitle;
-    public static string title;
-    
-    // Start is called before the first frame update
+    public GameObject movieTitle;
+    public GameObject moviePoster;
+    public GameObject movieInfo;
+    public static string newTitle;
+    public static Sprite newPoster;
+    public static string newInfo;
+
     void Start()
     {
         StartCoroutine(PushTextOnScreen());
     }
 
-    // Update is called once per frame
-    void Update()
+
+    IEnumerator PushTextOnScreen()
     {
-        
-    }
-    IEnumerator PushTextOnScreen(){
         yield return new WaitForSeconds(0.25f);
-        screenTitle.text = title;
+
+        DisplayMovie();
+    }
+
+    void DisplayMovie()
+    {
+        movieTitle.GetComponent<TextMeshProUGUI>().text = newTitle;
+        moviePoster.GetComponent<Image>().sprite = newPoster;
+        movieInfo.GetComponent<TextMeshProUGUI>().text = newInfo;
     }
 }

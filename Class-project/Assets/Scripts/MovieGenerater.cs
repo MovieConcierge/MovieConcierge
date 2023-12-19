@@ -6,9 +6,10 @@ using UnityEditor;
 //[RequireComponent(typeof(Button))]
 public class MovieGenerater : MonoBehaviour
 {
-    public int count = 1;
-    public bool displayingTitle = false;
-    // Start is called before the first frame update
+
+    public static bool displayingTitle = false;
+    public Sprite posterImage;
+
     void Start()
     {
         //var button = GetComponent<Button>();
@@ -16,17 +17,22 @@ public class MovieGenerater : MonoBehaviour
         //button.onClick.AddListener(ChangeTitle);
     }
 
-    // Update is called once per frame
+
     void Update()
     {
-        if(displayingTitle == false){
+        if(displayingTitle == false)
+        {
             displayingTitle = true;
-            MovieDisplay.title = "test1";
+            SetMovieInformation("21 jump street", posterImage, "idk Johnny Depp is in here and it seems like it has to do with dancing");
         }
     }
 
-    void ChangeTitle()
+        void SetMovieInformation(string title, Sprite poster, string info)
     {
-        count = count + 1;
+        MovieDisplay.newTitle = title;
+        MovieDisplay.newPoster = poster;
+        MovieDisplay.newInfo = info;
+
+
     }
 }
