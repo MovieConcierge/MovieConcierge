@@ -355,7 +355,7 @@
 "Assets/Scripts/ButtonDetector.cs"
 "Assets/Scripts/GroupButton.cs"
 "Assets/Scripts/MovieDisplay.cs"
-"Assets/Scripts/MovieGenerater.cs"
+"Assets/Scripts/MovieGenerator1.cs"
 "Assets/Scripts/SoloButton.cs"
 -langversion:9.0
 
