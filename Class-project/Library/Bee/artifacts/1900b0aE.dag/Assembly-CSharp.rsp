@@ -354,9 +354,12 @@
 -analyzer:"C:/Program Files/Unity/Hub/Editor/2022.3.15f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.SourceGenerators.dll"
 "Assets/Scripts/ButtonDetector.cs"
 "Assets/Scripts/GroupButton.cs"
+"Assets/Scripts/InfoButton.cs"
 "Assets/Scripts/MovieDisplay.cs"
-"Assets/Scripts/MovieGenerator1.cs"
+"Assets/Scripts/MovieGenerator.cs"
+"Assets/Scripts/PopUpManager.cs"
 "Assets/Scripts/SoloButton.cs"
+"Assets/Scripts/TitleMenuScript.cs"
 -langversion:9.0
 
 /deterministic
