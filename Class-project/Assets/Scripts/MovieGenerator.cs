@@ -81,8 +81,12 @@ public class MovieGenerator : MonoBehaviour
 
                 if (movieApiResponse != null)
                 {
+                    // Extract "overview" and "genres" from the API response
+                    string overview = movieApiResponse.overview;
+                    List<MovieApiResponse.Genre> genres = movieApiResponse.genres;
+
                     // Call SetMovieInformation with API response
-                    SetMovieInformation(movieApiResponse.title, movieApiResponse.poster_path, movieApiResponse.overview);
+                    SetMovieInformation(movieApiResponse.title, movieApiResponse.poster_path, overview, genres);
                 }
                 else
                 {
@@ -96,7 +100,8 @@ public class MovieGenerator : MonoBehaviour
         }
     }
 
-    void SetMovieInformation(string title, string posterPath, string info)
+
+    void SetMovieInformation(string title, string posterPath, string info, List<MovieApiResponse.Genre> genres)
     {
         // Update the movie information using the fetched data
         MovieDisplay.newTitle = title;
@@ -107,8 +112,24 @@ public class MovieGenerator : MonoBehaviour
 
         StartCoroutine(FetchTexture(posterUrl));
 
+        // Concatenate genres into a single string
+        string genresString = "";
+        foreach (var genre in genres)
+        {
+            genresString += genre.name + ", ";
+        }
+
+        // Remove the trailing comma and space
+        genresString = genresString.TrimEnd(',', ' ');
+
+        // Assign the concatenated genres string to PopUpManager.newGenres
+        PopUpManager.newGenres = genresString;
+
         PopUpManager.newOverview = info;
+
     }
+
+
 
 IEnumerator FetchTexture(string url)
 {
@@ -148,6 +169,13 @@ IEnumerator FetchTexture(string url)
         public string title;
         public string poster_path;
         public string overview;
+        public List<Genre> genres; // Add a property for genres
         // Other properties you might want to extract
+        [System.Serializable]
+        public class Genre
+        {
+            public int id;
+            public string name;
+        }
     }
 }
