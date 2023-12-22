@@ -107,7 +107,7 @@ public class MovieGenerator : MonoBehaviour
 
         StartCoroutine(FetchTexture(posterUrl));
 
-        MovieDisplay.newInfo = info;
+        PopUpManager.newOverview = info;
     }
 
 IEnumerator FetchTexture(string url)

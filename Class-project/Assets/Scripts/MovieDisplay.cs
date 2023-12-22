@@ -8,7 +8,6 @@ public class MovieDisplay : MonoBehaviour
 {
     public GameObject movieTitle;
     public GameObject moviePoster;
-    public GameObject movieInfo;
     public static string newTitle;
     public static Texture2D newPosterTexture;
     public static string newInfo;
@@ -33,7 +32,6 @@ public class MovieDisplay : MonoBehaviour
         movieTitle.GetComponent<TextMeshProUGUI>().text = newTitle;
         moviePoster.GetComponent<Image>().sprite = CreateSpriteFromTexture(newPosterTexture, moviePoster.GetComponent<RectTransform>());
         
-        movieInfo.GetComponent<TextMeshProUGUI>().text = newInfo;
     }
 
     Sprite CreateSpriteFromTexture(Texture2D texture, RectTransform rectTransform)
