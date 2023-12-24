@@ -3780,6 +3780,7 @@ GameObject:
   - component: {fileID: 945340478}
   - component: {fileID: 945340477}
   - component: {fileID: 945340476}
+  - component: {fileID: 945340480}
   m_Layer: 5
   m_Name: Genres
   m_TagString: Untagged
@@ -3890,6 +3891,39 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!114 &945340480
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 945340475}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2126794a29607d74bab8e973eef02f8b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  genreToggles:
+  - {fileID: 343906566}
+  - {fileID: 494327656}
+  - {fileID: 1231324962}
+  - {fileID: 882424525}
+  - {fileID: 1343125057}
+  - {fileID: 1447230816}
+  - {fileID: 1382929591}
+  - {fileID: 252890259}
+  - {fileID: 1936180738}
+  - {fileID: 478249983}
+  - {fileID: 296209511}
+  - {fileID: 88459109}
+  - {fileID: 267927264}
+  - {fileID: 733188310}
+  - {fileID: 409089014}
+  - {fileID: 49880930}
+  - {fileID: 845060328}
+  - {fileID: 228976507}
+  - {fileID: 1577625907}
+  confirmButton: {fileID: 1587669918}
 --- !u!1 &955919397
 GameObject:
   m_ObjectHideFlags: 0
