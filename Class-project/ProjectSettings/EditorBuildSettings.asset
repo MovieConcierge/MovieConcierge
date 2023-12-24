@@ -14,4 +14,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Solo.unity
     guid: 00441930e5b6049cdb8b8d6b879f8018
+  - enabled: 1
+    path: Assets/Scenes/VotingSolo.unity
+    guid: 524d75b99afed054abf5e5ea5a641fc0
   m_configObjects: {}
