@@ -10,10 +10,11 @@ public class MovieDisplay : MonoBehaviour
     public GameObject moviePoster;
     public static string newTitle;
     public static Texture2D newPosterTexture;
-    public static string newInfo;
 
     void Start()
     {
+        MovieGenerator.OnTextureFetched += DisplayMovie;
+
         StartCoroutine(PushTextOnScreen());
     }
 
@@ -22,8 +23,6 @@ public class MovieDisplay : MonoBehaviour
     {
         yield return new WaitForSeconds(0.25f);
 
-        //Debug.Log("new poster dimensions: " + newPoster.rect.width + "x" + newPoster.rect.height);
-
         DisplayMovie();
     }
 
@@ -31,7 +30,7 @@ public class MovieDisplay : MonoBehaviour
     {
         movieTitle.GetComponent<TextMeshProUGUI>().text = newTitle;
         moviePoster.GetComponent<Image>().sprite = CreateSpriteFromTexture(newPosterTexture, moviePoster.GetComponent<RectTransform>());
-        
+
     }
 
     Sprite CreateSpriteFromTexture(Texture2D texture, RectTransform rectTransform)
