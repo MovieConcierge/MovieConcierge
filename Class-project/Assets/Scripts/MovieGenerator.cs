@@ -9,6 +9,8 @@ public class MovieGenerator : MonoBehaviour
 {
     public string apiKey = "81e872ea74c4fe76eed2dd856b47223d"; // Replace with your TMDb API key
     private List<int> popularMovieIds = new List<int>();
+    private List<string> selectedGenres = new List<string>(); // Retrieve this from PlayerPrefs or other method
+
     private List<int> likedMovies = new List<int>();
     private List<int> dislikedMovies = new List<int>();
     private int currentMovieId;
@@ -33,7 +35,7 @@ public class MovieGenerator : MonoBehaviour
     {
         for (int page = 1; page <= pageCount; page++)
         {
-            string apiUrl = $"https://api.themoviedb.org/3/movie/popular?api_key={apiKey}&language=en-US&page={page}";
+            string apiUrl = $"https://api.themoviedb.org/3/discover/movie?api_key={apiKey}&language=en-US&sort_by=popularity.desc&page={page}&with_genres={string.Join(",", selectedGenres)}";
             using (UnityWebRequest request = UnityWebRequest.Get(apiUrl))
             {
                 yield return request.SendWebRequest();
