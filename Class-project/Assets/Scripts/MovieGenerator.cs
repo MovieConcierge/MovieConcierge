@@ -24,15 +24,15 @@ public class MovieGenerator : MonoBehaviour
         selectedGenres = PlayerPrefs.GetString("SelectedGenres", "").Split(',').ToList();
     }
 
-    void Start()
+    IEnumerator Start()
+{
+    if (string.IsNullOrEmpty(apiKey))
     {
-        if (string.IsNullOrEmpty(apiKey))
-        {
-            Debug.LogError("TMDb API key is not set. Please provide your API key.");
-            return;
-        }
+        Debug.LogError("TMDb API key is not set. Please provide your API key.");
+        yield break;
+    }
 
-        StartCoroutine(FetchPopularMovieIds(NumberOfPages));
+    yield return StartCoroutine(FetchPopularMovieIds(NumberOfPages));
     }
 
     IEnumerator FetchPopularMovieIds(int pageCount)
@@ -41,6 +41,7 @@ public class MovieGenerator : MonoBehaviour
         {
             string selectedGenresString = string.Join(",", selectedGenres);
             string apiUrl = $"https://api.themoviedb.org/3/discover/movie?api_key={apiKey}&language=en-US&sort_by=popularity.desc&page={page}&with_genres={selectedGenresString}";
+            Debug.Log($"API URL: {apiUrl}");
 
             using (UnityWebRequest request = UnityWebRequest.Get(apiUrl))
             {
@@ -49,6 +50,8 @@ public class MovieGenerator : MonoBehaviour
                 if (request.result == UnityWebRequest.Result.Success)
                 {
                     string jsonResult = request.downloadHandler.text;
+                    Debug.Log($"JSON Result: {jsonResult}");
+
                     PopularMoviesApiResponse popularMoviesApiResponse = JsonUtility.FromJson<PopularMoviesApiResponse>(jsonResult);
 
                     if (popularMoviesApiResponse != null && popularMoviesApiResponse.results != null)
@@ -61,6 +64,7 @@ public class MovieGenerator : MonoBehaviour
                     else
                     {
                         Debug.LogError($"Error fetching popular movies on page {page}");
+                        Debug.LogError($"Error fetching popular movies on page {page}: {request.error}");
                     }
                 }
                 else
