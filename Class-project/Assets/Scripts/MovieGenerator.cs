@@ -2,12 +2,27 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using System.Linq;
+using UnityEngine.SceneManagement;
 
 public class MovieGenerator : MonoBehaviour
 {
-    public static bool displayingTitle = false;
     public string apiKey = "81e872ea74c4fe76eed2dd856b47223d"; // Replace with your TMDb API key
     private List<int> popularMovieIds = new List<int>();
+    private List<string> selectedGenres = new List<string>();
+    private List<int> likedMovies = new List<int>();
+    private List<int> dislikedMovies = new List<int>();
+    private int currentMovieId;
+    public delegate void TextureFetchedAction();
+    public static event TextureFetchedAction OnTextureFetched;
+    public string votingSceneName = "VotingSolo";
+    public int NumberOfPages = 3; //20 movies per page
+    public int MaxLikedMovies = 4;
+
+    void Awake()
+    {
+        selectedGenres = PlayerPrefs.GetString("SelectedGenres", "").Split(',').ToList();
+    }
 
     void Start()
     {
@@ -17,54 +32,49 @@ public class MovieGenerator : MonoBehaviour
             return;
         }
 
-        StartCoroutine(FetchPopularMovieIds());
+        StartCoroutine(FetchPopularMovieIds(NumberOfPages));
     }
 
-    IEnumerator FetchPopularMovieIds()
+    IEnumerator FetchPopularMovieIds(int pageCount)
     {
-        // Fetch the list of the 50 most popular movies
-        string apiUrl = $"https://api.themoviedb.org/3/movie/popular?api_key={apiKey}&language=en-US&page=1";
-        using (UnityWebRequest request = UnityWebRequest.Get(apiUrl))
+        for (int page = 1; page <= pageCount; page++)
         {
-            yield return request.SendWebRequest();
+            string selectedGenresString = string.Join(",", selectedGenres);
+            string apiUrl = $"https://api.themoviedb.org/3/discover/movie?api_key={apiKey}&language=en-US&sort_by=popularity.desc&page={page}&with_genres={selectedGenresString}";
 
-            if (request.result == UnityWebRequest.Result.Success)
+            using (UnityWebRequest request = UnityWebRequest.Get(apiUrl))
             {
-                string jsonResult = request.downloadHandler.text;
-                PopularMoviesApiResponse popularMoviesApiResponse = JsonUtility.FromJson<PopularMoviesApiResponse>(jsonResult);
+                yield return request.SendWebRequest();
 
-                if (popularMoviesApiResponse != null && popularMoviesApiResponse.results != null)
+                if (request.result == UnityWebRequest.Result.Success)
                 {
-                    foreach (var movie in popularMoviesApiResponse.results)
+                    string jsonResult = request.downloadHandler.text;
+                    PopularMoviesApiResponse popularMoviesApiResponse = JsonUtility.FromJson<PopularMoviesApiResponse>(jsonResult);
+
+                    if (popularMoviesApiResponse != null && popularMoviesApiResponse.results != null)
                     {
-                        popularMovieIds.Add(movie.id);
+                        foreach (var movie in popularMoviesApiResponse.results)
+                        {
+                            popularMovieIds.Add(movie.id);
+                        }
                     }
-
-                        if (popularMovieIds.Count > 0)
-                        {
-                            // Select a random movie ID
-                            int randomMovieId = popularMovieIds[Random.Range(0, popularMovieIds.Count)];
-
-                            // Fetch detailed information about the randomly selected movie
-                            StartCoroutine(FetchMovieInformation(randomMovieId));
-                        }
-                        else
-                        {
-                            Debug.LogError("No movies found in the popular movies list");
-                        }
-
-                        }
-                        else
-                        {
-                            Debug.LogError("Error fetching popular movie IDs");
-                        }
-            }
-            else
-            {
-                Debug.LogError("Error fetching popular movie IDs: " + request.error);
+                    else
+                    {
+                        Debug.LogError($"Error fetching popular movies on page {page}");
+                    }
+                }
+                else
+                {
+                    Debug.LogError($"Error fetching popular movies on page {page}: {request.error}");
+                }
             }
         }
+
+        //selecting a random movie ID and fetching detailed information.
+        currentMovieId = popularMovieIds[Random.Range(0, popularMovieIds.Count)];
+        StartCoroutine(FetchMovieInformation(currentMovieId));
     }
+
 
     IEnumerator FetchMovieInformation(int movieId)
     {
@@ -76,6 +86,7 @@ public class MovieGenerator : MonoBehaviour
 
             if (request.result == UnityWebRequest.Result.Success)
             {
+                
                 string jsonResult = request.downloadHandler.text;
                 MovieApiResponse movieApiResponse = JsonUtility.FromJson<MovieApiResponse>(jsonResult);
 
@@ -108,7 +119,6 @@ public class MovieGenerator : MonoBehaviour
 
         // Construct the full poster URL using the TMDb base URL
         string posterUrl = $"https://image.tmdb.org/t/p/w500/{posterPath}";
-        Debug.Log("poster url: " + posterUrl);
 
         StartCoroutine(FetchTexture(posterUrl));
 
@@ -131,23 +141,25 @@ public class MovieGenerator : MonoBehaviour
 
 
 
-IEnumerator FetchTexture(string url)
-{
-    using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(url))
+    IEnumerator FetchTexture(string url)
     {
-        yield return request.SendWebRequest();
+        using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(url))
+        {
+            yield return request.SendWebRequest();
 
-        if (request.result == UnityWebRequest.Result.Success)
-        {
-            // Get the downloaded texture
-            MovieDisplay.newPosterTexture = DownloadHandlerTexture.GetContent(request);
-        }
-        else
-        {
-            Debug.LogError("Error fetching movie poster: " + request.error);
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                MovieDisplay.newPosterTexture = DownloadHandlerTexture.GetContent(request);
+
+                // Notify that the texture has been fetched
+                OnTextureFetched?.Invoke();
+            }
+            else
+            {
+                Debug.LogError("Error fetching movie poster: " + request.error);
+            }
         }
     }
-}
 
 
     [System.Serializable]
@@ -178,4 +190,80 @@ IEnumerator FetchTexture(string url)
             public string name;
         }
     }
+
+
+    public void OnLikeButtonClick()
+    {
+        // Store the current movie ID in the likedMovies list
+        int currentMovieId = GetCurrentMovieId();
+        likedMovies.Add(currentMovieId);
+
+        // Check if the number of liked movies reaches 4
+        if (likedMovies.Count >= MaxLikedMovies)
+        {
+            // Transition to the "Voting" scene
+            LoadVotingScene();
+            return; // Stop further execution
+        }
+
+        // Display another movie that hasn't been liked or disliked yet
+        ShowNextUnratedMovie();
+    }
+
+    public void OnDislikeButtonClick()
+    {
+    // Store the current movie ID in the dislikedMovies list
+    int currentMovieId = GetCurrentMovieId();
+    dislikedMovies.Add(currentMovieId);
+
+    // Check if the number of liked movies reaches 4
+    if (likedMovies.Count >= MaxLikedMovies)
+    {
+        // Transition to the "Voting" scene
+        LoadVotingScene();
+        return; // Stop further execution
+    }
+
+    // Display another movie that hasn't been liked or disliked yet
+    ShowNextUnratedMovie();
+    }
+
+    private int GetCurrentMovieId()
+    {
+        // Return the stored current movie ID
+        return currentMovieId;
+    }
+
+    private void ShowNextUnratedMovie()
+    {
+        // Fetch the list of 50 popular movies
+        List<int> unratedMovies = GetUnratedMovies();
+
+        // Find a movie that hasn't been rated yet
+        int nextMovieId = FindNextUnratedMovie(unratedMovies);
+
+        // Fetch detailed information about the next movie
+        StartCoroutine(FetchMovieInformation(nextMovieId));
+    }
+
+    private List<int> GetUnratedMovies()
+    {
+        // Remove liked and disliked movies from the list
+        List<int> unratedMovies = popularMovieIds.Except(likedMovies).Except(dislikedMovies).ToList();
+        return unratedMovies;
+    }
+
+    private int FindNextUnratedMovie(List<int> unratedMovies)
+    {
+        // Select a random movie from the list of unrated movies
+        int nextMovieId = unratedMovies[Random.Range(0, unratedMovies.Count)];
+        return nextMovieId;
+    }
+
+    public void LoadVotingScene()
+    {
+    // Load the "Voting" scene
+    SceneManager.LoadScene(votingSceneName);
+    }
+
 }
