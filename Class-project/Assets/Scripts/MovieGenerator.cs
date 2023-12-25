@@ -37,11 +37,11 @@ public class MovieGenerator : MonoBehaviour
 
     IEnumerator FetchPopularMovieIds(int pageCount)
     {
+        string selectedGenresString = string.Join(",", selectedGenres);
         for (int page = 1; page <= pageCount; page++)
         {
-            string selectedGenresString = string.Join(",", selectedGenres);
+            
             string apiUrl = $"https://api.themoviedb.org/3/discover/movie?api_key={apiKey}&language=en-US&sort_by=popularity.desc&page={page}&with_genres={selectedGenresString}";
-            Debug.Log($"API URL: {apiUrl}");
 
             using (UnityWebRequest request = UnityWebRequest.Get(apiUrl))
             {
@@ -50,7 +50,6 @@ public class MovieGenerator : MonoBehaviour
                 if (request.result == UnityWebRequest.Result.Success)
                 {
                     string jsonResult = request.downloadHandler.text;
-                    Debug.Log($"JSON Result: {jsonResult}");
 
                     PopularMoviesApiResponse popularMoviesApiResponse = JsonUtility.FromJson<PopularMoviesApiResponse>(jsonResult);
 
@@ -64,7 +63,6 @@ public class MovieGenerator : MonoBehaviour
                     else
                     {
                         Debug.LogError($"Error fetching popular movies on page {page}");
-                        Debug.LogError($"Error fetching popular movies on page {page}: {request.error}");
                     }
                 }
                 else
