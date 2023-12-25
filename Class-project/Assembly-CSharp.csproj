@@ -65,9 +65,11 @@
   <ItemGroup>
     <Compile Include="Assets/Scripts/TitleMenuScript.cs" />
     <Compile Include="Assets/Scripts/MovieGenerator.cs" />
+    <Compile Include="Assets/Scripts/GenreSettings.cs" />
     <Compile Include="Assets/Scripts/ButtonDetector.cs" />
     <Compile Include="Assets/Scripts/PopUpManager.cs" />
     <Compile Include="Assets/Scripts/SoloButton.cs" />
+    <Compile Include="Assets/Scripts/TitleCanvasController.cs" />
     <Compile Include="Assets/Scripts/MovieDisplay.cs" />
     <Compile Include="Assets/Scripts/InfoButton.cs" />
     <Compile Include="Assets/Scripts/GroupButton.cs" />
