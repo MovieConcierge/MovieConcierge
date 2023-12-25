@@ -71,8 +71,15 @@ public class MovieGenerator : MonoBehaviour
         }
 
         //selecting a random movie ID and fetching detailed information.
-        currentMovieId = popularMovieIds[Random.Range(0, popularMovieIds.Count)];
-        StartCoroutine(FetchMovieInformation(currentMovieId));
+        if (popularMovieIds.Count > 0)
+        {
+            int currentMovieId = popularMovieIds[Random.Range(0, popularMovieIds.Count)];
+            StartCoroutine(FetchMovieInformation(currentMovieId));
+        }
+        else
+        {
+            Debug.LogError("No movies found in the popular movies list");
+        }
     }
 
 
