@@ -24,22 +24,23 @@ public class MovieGenerator : MonoBehaviour
         selectedGenres = PlayerPrefs.GetString("SelectedGenres", "").Split(',').ToList();
     }
 
-    void Start()
+    IEnumerator Start()
+{
+    if (string.IsNullOrEmpty(apiKey))
     {
-        if (string.IsNullOrEmpty(apiKey))
-        {
-            Debug.LogError("TMDb API key is not set. Please provide your API key.");
-            return;
-        }
+        Debug.LogError("TMDb API key is not set. Please provide your API key.");
+        yield break;
+    }
 
-        StartCoroutine(FetchPopularMovieIds(NumberOfPages));
+    yield return StartCoroutine(FetchPopularMovieIds(NumberOfPages));
     }
 
     IEnumerator FetchPopularMovieIds(int pageCount)
     {
+        string selectedGenresString = string.Join(",", selectedGenres);
         for (int page = 1; page <= pageCount; page++)
         {
-            string selectedGenresString = string.Join(",", selectedGenres);
+            
             string apiUrl = $"https://api.themoviedb.org/3/discover/movie?api_key={apiKey}&language=en-US&sort_by=popularity.desc&page={page}&with_genres={selectedGenresString}";
 
             using (UnityWebRequest request = UnityWebRequest.Get(apiUrl))
@@ -49,6 +50,7 @@ public class MovieGenerator : MonoBehaviour
                 if (request.result == UnityWebRequest.Result.Success)
                 {
                     string jsonResult = request.downloadHandler.text;
+
                     PopularMoviesApiResponse popularMoviesApiResponse = JsonUtility.FromJson<PopularMoviesApiResponse>(jsonResult);
 
                     if (popularMoviesApiResponse != null && popularMoviesApiResponse.results != null)
@@ -71,8 +73,15 @@ public class MovieGenerator : MonoBehaviour
         }
 
         //selecting a random movie ID and fetching detailed information.
-        currentMovieId = popularMovieIds[Random.Range(0, popularMovieIds.Count)];
-        StartCoroutine(FetchMovieInformation(currentMovieId));
+        if (popularMovieIds.Count > 0)
+        {
+            int currentMovieId = popularMovieIds[Random.Range(0, popularMovieIds.Count)];
+            StartCoroutine(FetchMovieInformation(currentMovieId));
+        }
+        else
+        {
+            Debug.LogError("No movies found in the popular movies list");
+        }
     }
 
 
