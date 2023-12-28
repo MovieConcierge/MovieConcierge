@@ -8,6 +8,8 @@ using UnityEngine.SceneManagement;
 public class MovieGenerator : MonoBehaviour
 {
     public string apiKey = "81e872ea74c4fe76eed2dd856b47223d"; // Replace with your TMDb API key
+    public Canvas mainCanvas;
+    public Canvas votingCanvas;
     private List<int> popularMovieIds = new List<int>();
     private List<string> selectedGenres = new List<string>();
     private List<int> likedMovies = new List<int>();
@@ -15,9 +17,9 @@ public class MovieGenerator : MonoBehaviour
     private int currentMovieId;
     public delegate void TextureFetchedAction();
     public static event TextureFetchedAction OnTextureFetched;
-    public string votingSceneName = "VotingSolo";
     public int NumberOfPages = 3; //20 movies per page
     public int MaxLikedMovies = 4;
+    public static event System.Action OnVotingStartRequested;
 
     void Awake()
     {
@@ -131,18 +133,8 @@ public class MovieGenerator : MonoBehaviour
 
         StartCoroutine(FetchTexture(posterUrl));
 
-        // Concatenate genres into a single string
-        string genresString = "";
-        foreach (var genre in genres)
-        {
-            genresString += genre.name + ", ";
-        }
-
-        // Remove the trailing comma and space
-        genresString = genresString.TrimEnd(',', ' ');
-
         // Assign the concatenated genres string to PopUpManager.newGenres
-        PopUpManager.newGenres = genresString;
+        PopUpManager.newGenres = ConvertGenresToString(genres);
 
         PopUpManager.newOverview = info;
 
@@ -207,11 +199,11 @@ public class MovieGenerator : MonoBehaviour
         int currentMovieId = GetCurrentMovieId();
         likedMovies.Add(currentMovieId);
 
-        // Check if the number of liked movies reaches 4
+        // Check if the number of liked movies reaches the maximum
         if (likedMovies.Count >= MaxLikedMovies)
         {
-            // Transition to the "Voting" scene
-            LoadVotingScene();
+            // Transition to the voting canvas
+            OnStopButtonPressed();
             return; // Stop further execution
         }
 
@@ -219,22 +211,40 @@ public class MovieGenerator : MonoBehaviour
         ShowNextUnratedMovie();
     }
 
-    public void OnDislikeButtonClick()
+    private void ShowVotingCanvas()
     {
-    // Store the current movie ID in the dislikedMovies list
-    int currentMovieId = GetCurrentMovieId();
-    dislikedMovies.Add(currentMovieId);
+        // Disable the main canvas
+        mainCanvas.gameObject.SetActive(false);
 
-    // Check if the number of liked movies reaches 4
-    if (likedMovies.Count >= MaxLikedMovies)
-    {
-        // Transition to the "Voting" scene
-        LoadVotingScene();
-        return; // Stop further execution
+        // Enable the voting canvas
+        votingCanvas.gameObject.SetActive(true);
     }
 
-    // Display another movie that hasn't been liked or disliked yet
-    ShowNextUnratedMovie();
+    public void OnDislikeButtonClick()
+    {
+        // Store the current movie ID in the dislikedMovies list
+        int currentMovieId = GetCurrentMovieId();
+        dislikedMovies.Add(currentMovieId);
+
+        // Check if the number of liked movies reaches 4
+        if (likedMovies.Count >= MaxLikedMovies)
+        {
+            // Transition to the "Voting" scene
+            OnStopButtonPressed();
+            return; // Stop further execution
+        }
+        // Display another movie that hasn't been liked or disliked yet
+        ShowNextUnratedMovie();
+    }
+
+    public void OnStopButtonPressed()
+    {
+        VotingSystem.LikedMovies = likedMovies;
+        // Notify subscribers (e.g., VotingSystem) that voting should start
+        OnVotingStartRequested?.Invoke();
+
+        // Set movie information before transitioning to voting canvas
+        ShowVotingCanvas();
     }
 
     private int GetCurrentMovieId()
@@ -265,14 +275,22 @@ public class MovieGenerator : MonoBehaviour
     private int FindNextUnratedMovie(List<int> unratedMovies)
     {
         // Select a random movie from the list of unrated movies
-        int nextMovieId = unratedMovies[Random.Range(0, unratedMovies.Count)];
+        int nextMovieId = unratedMovies[UnityEngine.Random.Range(0, unratedMovies.Count)];
         return nextMovieId;
     }
-
-    public void LoadVotingScene()
+        string ConvertGenresToString(List<MovieApiResponse.Genre> genres)
     {
-    // Load the "Voting" scene
-    SceneManager.LoadScene(votingSceneName);
+        string genresString = "";
+
+        foreach (var genre in genres)
+        {
+            genresString += genre.name + ", ";
+        }
+
+        // Remove the trailing comma and space
+        genresString = genresString.TrimEnd(',', ' ');
+
+        return genresString;
     }
 
 }
