@@ -4,6 +4,7 @@
 [Oo]bj/
 [Bb]uild/
 [Bb]uilds/
+[Ll]ibrary/[Pp]ackage[Cc]ache/
 
 # Ignore Visual Studio Code specific files
 .vscode/
@@ -33,6 +34,7 @@ Builds/
 [Ll]ibrary/
 [Ll]ocal[Cc]ache/
 [Uu]ser[Ss]ettings/
+[Ll]ibrary/[Pp]ackage[Cc]ache/
 
 # Visual Studio Code
 .vscode/
