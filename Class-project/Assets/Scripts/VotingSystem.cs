@@ -11,7 +11,9 @@ public class VotingSystem : MonoBehaviour
 {
     public string apiKey = "81e872ea74c4fe76eed2dd856b47223d"; // Replace with your TMDb API key
     public static List<int> LikedMovies;  // Assuming this is the list of liked movie IDs from MovieGenerator
-    private List<MovieMatchup> matchups = new List<MovieMatchup>();
+    private Queue<Matchup> matchups = new Queue<Matchup>();
+    private Queue<Matchup> losersBracket = new Queue<Matchup>();
+    private int roundCount = 1;
     private int currentMatchIndex = 0;
 
     public GameObject movieATitle;
@@ -25,7 +27,6 @@ public class VotingSystem : MonoBehaviour
     public Button movieBButton;
 
     private MovieGenerator movieGenerator; // Reference to the MovieGenerator script
-    public static Texture2D newPosterTexture;
 
     void Start()
     {
@@ -38,46 +39,51 @@ public class VotingSystem : MonoBehaviour
     void StartVotingIfRequested()
     {
         // Check if LikedMovies is not null and has items
-        if (LikedMovies != null && LikedMovies.Count > 0)
+        if (LikedMovies != null && LikedMovies.Count > 1)
         {
             CreateMatchups();
             SetMatchup();
         }
         else
         {
-            Debug.LogError("LikedMovies is null or empty. Make sure it is properly initialized in MovieGenerator.");
+            Debug.LogError("LikedMovies is null or does not have enough movies. Make sure it is properly initialized in MovieGenerator.");
         }
     }
 
     void CreateMatchups()
     {
-        // Generate matchups based on the liked movies
-        List<int> remainingMovies = new List<int>(LikedMovies);
-        while (remainingMovies.Count >= 2)
+        List<int> shuffledMovies = new List<int>(LikedMovies.OrderBy(x => Guid.NewGuid()));
+
+        while (shuffledMovies.Count > 1)
         {
-            int movieA = remainingMovies[UnityEngine.Random.Range(0, remainingMovies.Count)];
-            remainingMovies.Remove(movieA);
+            int movieA = shuffledMovies[0];
+            shuffledMovies.RemoveAt(0);
 
-            int movieB = remainingMovies[UnityEngine.Random.Range(0, remainingMovies.Count)];
-            remainingMovies.Remove(movieB);
+            int movieB = shuffledMovies[0];
+            shuffledMovies.RemoveAt(0);
 
-            matchups.Add(new MovieMatchup(movieA, movieB));
+            matchups.Enqueue(new Matchup(movieA, movieB));
         }
     }
 
     void SetMatchup()
     {
-        if (currentMatchIndex < matchups.Count)
+        if (matchups.Count > 0)
         {
-            // Get the current matchup
-            MovieMatchup currentMatchup = matchups[currentMatchIndex];
+            Matchup currentMatchup = matchups.Dequeue();
 
-            // Set the UI elements for movie A based on the current matchup
             FetchMovieInformation(currentMatchup.movieA, currentMatchup.movieB);
 
-            // Enable buttons
             movieAButton.interactable = true;
             movieBButton.interactable = true;
+        }
+        else if (roundCount == 1)
+        {
+            // Move to the losers bracket for the second round
+            roundCount++;
+            matchups = new Queue<Matchup>(losersBracket);
+            losersBracket.Clear();
+            SetMatchup();
         }
         else
         {
@@ -86,9 +92,39 @@ public class VotingSystem : MonoBehaviour
         }
     }
 
-    void SetMovieUI(MovieApiResponse movieA, MovieApiResponse movieB)
+    void FetchMovieInformation(int movieAId, int movieBId)
     {
-        // Set the UI elements for movie A
+        StartCoroutine(FetchMovieDetails(movieAId, movieADetails =>
+        {
+            StartCoroutine(FetchMovieDetails(movieBId, movieBDetails =>
+            {
+                SetMovieUI(movieADetails, movieBDetails);
+            }));
+        }));
+    }
+
+    IEnumerator FetchMovieDetails(int movieId, Action<MovieDetails> callback)
+    {
+        string apiUrl = $"https://api.themoviedb.org/3/movie/{movieId}?api_key={apiKey}&language=en-US";
+        using (UnityWebRequest request = UnityWebRequest.Get(apiUrl))
+        {
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                string jsonResult = request.downloadHandler.text;
+                MovieDetails movieDetails = JsonUtility.FromJson<MovieDetails>(jsonResult);
+                callback?.Invoke(movieDetails);
+            }
+            else
+            {
+                Debug.LogError("Error fetching movie information for ID " + movieId + ": " + request.error);
+            }
+        }
+    }
+
+    void SetMovieUI(MovieDetails movieA, MovieDetails movieB)
+    {
         movieATitle.GetComponent<TextMeshProUGUI>().text = movieA.title;
         movieAGenres.GetComponent<TextMeshProUGUI>().text = ConvertGenresToString(movieA.genres);
 
@@ -97,7 +133,6 @@ public class VotingSystem : MonoBehaviour
             movieAPoster.GetComponent<Image>().sprite = CreateSpriteFromTexture(texture, movieAPoster.GetComponent<RectTransform>());
         }));
 
-        // Set the UI elements for movie B
         movieBTitle.GetComponent<TextMeshProUGUI>().text = movieB.title;
         movieBGenres.GetComponent<TextMeshProUGUI>().text = ConvertGenresToString(movieB.genres);
 
@@ -107,58 +142,116 @@ public class VotingSystem : MonoBehaviour
         }));
     }
 
-    IEnumerator FetchMovieInformation(int movieAId, int movieBId)
+    void DetermineWinner()
     {
-        // Fetch detailed information about movie A
-        string apiUrlA = $"https://api.themoviedb.org/3/movie/{movieAId}?api_key={apiKey}&language=en-US";
-        using (UnityWebRequest requestA = UnityWebRequest.Get(apiUrlA))
+        Debug.Log("Voting process completed. Determining the winner...");
+
+        if (losersBracket.Count > 0)
         {
-            yield return requestA.SendWebRequest();
-
-            if (requestA.result == UnityWebRequest.Result.Success)
-            {
-                string jsonResultA = requestA.downloadHandler.text;
-                MovieApiResponse movieApiResponseA = JsonUtility.FromJson<MovieApiResponse>(jsonResultA);
-
-                if (movieApiResponseA != null)
-                {
-                    // Fetch detailed information about movie B
-                    string apiUrlB = $"https://api.themoviedb.org/3/movie/{movieBId}?api_key={apiKey}&language=en-US";
-                    using (UnityWebRequest requestB = UnityWebRequest.Get(apiUrlB))
-                    {
-                        yield return requestB.SendWebRequest();
-
-                        if (requestB.result == UnityWebRequest.Result.Success)
-                        {
-                            string jsonResultB = requestB.downloadHandler.text;
-                            MovieApiResponse movieApiResponseB = JsonUtility.FromJson<MovieApiResponse>(jsonResultB);
-
-                            if (movieApiResponseB != null)
-                            {
-                                // Call SetMovieUI with API responses
-                                SetMovieUI(movieApiResponseA, movieApiResponseB);
-                            }
-                            else
-                            {
-                                Debug.LogError("Error fetching movie information for ID " + movieBId);
-                            }
-                        }
-                        else
-                        {
-                            Debug.LogError("Error fetching movie information for ID " + movieBId + ": " + requestB.error);
-                        }
-                    }
-                }
-                else
-                {
-                    Debug.LogError("Error fetching movie information for ID " + movieAId);
-                }
-            }
-            else
-            {
-                Debug.LogError("Error fetching movie information for ID " + movieAId + ": " + requestA.error);
-            }
+            roundCount = 1;
+            matchups = new Queue<Matchup>(losersBracket);
+            losersBracket.Clear();
+            SetMatchup();
         }
+        else
+        {
+            Debug.Log("No more matchups. Tournament completed!");
+        }
+    }
+    public void OnMovieAButtonClick()
+    {
+        // Check if there are more matchups in the queue
+        if (matchups.Count > 0)
+        {
+            RecordVote(matchups.Peek().movieA, matchups.Peek().movieB);
+        }
+        else
+        {
+            Debug.LogWarning("No more matchups available.");
+        }
+    }
+
+    public void OnMovieBButtonClick()
+    {
+        // Check if there are more matchups in the queue
+        if (matchups.Count > 0)
+        {
+            RecordVote(matchups.Peek().movieB, matchups.Peek().movieA);
+        }
+        else
+        {
+            Debug.LogWarning("No more matchups available.");
+        }
+    }
+    void RecordVote(int winnerId, int loserId)
+    {
+        losersBracket.Enqueue(new Matchup(winnerId, loserId));
+
+        movieAButton.interactable = false;
+        movieBButton.interactable = false;
+
+        // Move to the next matchup
+        currentMatchIndex++;
+
+        // Check if there are more matchups in the queue
+        if (currentMatchIndex < matchups.Count)
+        {
+            SetMatchup();
+        }
+        else if (losersBracket.Count > 0)
+        {
+            // If there are still matchups in the losers bracket, go to the next one
+            SetNextLosersBracketMatchup();
+        }
+        else
+        {
+            Debug.Log("Voting process completed. No more matchups available.");
+            DetermineWinner();
+        }
+    }
+
+    void SetNextLosersBracketMatchup()
+    {
+        // Check if there are more matchups in the losers bracket
+        if (losersBracket.Count > 0)
+        {
+            // Get the next matchup from the losers bracket
+            Matchup nextLosersBracketMatchup = losersBracket.Dequeue();
+
+            // Implement logic to set up UI elements for the next losers bracket matchup
+            // For example, you can call a method to set UI based on matchup details
+            SetLosersBracketMatchupUI(nextLosersBracketMatchup);
+        }
+        else
+        {
+            // If there are no more losers bracket matchups, determine the final winner
+            DetermineWinner();
+        }
+    }
+
+        void SetLosersBracketMatchupUI(Matchup matchup)
+    {
+        // Set up UI elements for movie A and B in the losers bracket
+        // Similar to how you set up UI for winners bracket matchups
+        FetchMovieInformation(matchup.movieA, matchup.movieB);
+
+        // Enable buttons for voting
+        movieAButton.interactable = true;
+        movieBButton.interactable = true;
+    }
+
+    string ConvertGenresToString(List<Genre> genres)
+    {
+        string genresString = "";
+
+        foreach (var genre in genres)
+        {
+            genresString += genre.name + ", ";
+        }
+
+        genresString = genresString.TrimEnd(',', ' ');
+
+        return genresString;
     }
 
     IEnumerator FetchTexture(string url, Action<Texture> callback)
@@ -179,17 +272,26 @@ public class VotingSystem : MonoBehaviour
         }
     }
 
-
     Sprite CreateSpriteFromTexture(Texture texture, RectTransform rectTransform)
     {
-        // Retrieve target dimensions from RectTransform
         int targetWidth = Mathf.RoundToInt(rectTransform.rect.width);
         int targetHeight = Mathf.RoundToInt(rectTransform.rect.height);
 
-        Texture2D convertedTexture = new Texture2D(texture.width, texture.height);
-        Graphics.CopyTexture(texture, convertedTexture);
-        // Resize the texture to the target dimensions
-        Texture2D resizedTexture = ResizeTexture(convertedTexture, targetWidth, targetHeight);
+        // Create a RenderTexture to resize the texture
+        RenderTexture rt = RenderTexture.GetTemporary(targetWidth, targetHeight, 0, RenderTextureFormat.Default, RenderTextureReadWrite.Default);
+        rt.filterMode = FilterMode.Bilinear;
+
+        // Set the active RenderTexture and blit the texture to the new size
+        RenderTexture.active = rt;
+        Graphics.Blit(texture, rt);
+
+        // Create a new Texture2D to read from the RenderTexture
+        Texture2D resizedTexture = new Texture2D(targetWidth, targetHeight);
+        resizedTexture.ReadPixels(new Rect(0, 0, targetWidth, targetHeight), 0, 0);
+        resizedTexture.Apply();
+
+        // Release the temporary RenderTexture
+        RenderTexture.ReleaseTemporary(rt);
 
         // Create a sprite from the resized texture
         Sprite sprite = Sprite.Create(
@@ -199,6 +301,8 @@ public class VotingSystem : MonoBehaviour
 
         return sprite;
     }
+
+
     Texture2D ResizeTexture(Texture2D sourceTexture, int targetWidth, int targetHeight)
     {
         RenderTexture rt = RenderTexture.GetTemporary(targetWidth, targetHeight);
@@ -217,91 +321,30 @@ public class VotingSystem : MonoBehaviour
         return resizedTexture;
     }
 
-    void DetermineWinner()
+    [Serializable]
+    public class MovieDetails
     {
-
-        Debug.Log($"CurrentMatchIndex: {currentMatchIndex}, Matchups Count: {matchups.Count}");
-
-        // Implement logic to determine the winner based on user choices
-        // For simplicity, let's assume the movie with more votes wins
-
-        MovieMatchup lastMatchup = matchups[currentMatchIndex - 1];
-        int winnerId = (UnityEngine.Random.Range(0, 2) == 0) ? lastMatchup.movieA : lastMatchup.movieB;
-
-        // Now you have the winner (use this information as needed)
-
-        // For now, let's just print the winner's title
-        Debug.Log($"Winner ID: {winnerId}");
-
-        // You can implement further logic based on the winner, e.g., load the chosen movie scene
-
-        // Disable buttons to prevent further voting
-        movieAButton.interactable = false;
-        movieBButton.interactable = false;
-    }
-
-    public void OnMovieAButtonClick()
-    {
-        RecordVote(matchups[currentMatchIndex].movieA);
-    }
-
-    public void OnMovieBButtonClick()
-    {
-        RecordVote(matchups[currentMatchIndex].movieB);
-    }
-
-    void RecordVote(int chosenMovieId)
-    {
-        // Record the user's choice (you can implement more complex logic here if needed)
-
-        // Disable buttons to prevent further voting for this matchup
-        movieAButton.interactable = false;
-        movieBButton.interactable = false;
-
-        // Move to the next matchup
-        currentMatchIndex++;
-        SetMatchup();
-    }
-        string ConvertGenresToString(List<MovieApiResponse.Genre> genres)
-    {
-        string genresString = "";
-
-        foreach (var genre in genres)
-        {
-            genresString += genre.name + ", ";
-        }
-
-        // Remove the trailing comma and space
-        genresString = genresString.TrimEnd(',', ' ');
-
-        return genresString;
+        public string title;
+        public string poster_path;
+        public List<Genre> genres;
     }
 
     [Serializable]
-    public class MovieMatchup
+    public class Genre
+    {
+        public int id;
+        public string name;
+    }
+
+    public class Matchup
     {
         public int movieA;
         public int movieB;
 
-        public MovieMatchup(int a, int b)
+        public Matchup(int a, int b)
         {
             movieA = a;
             movieB = b;
-        }
-    }
-
-    public class MovieApiResponse
-    {
-        public string title;
-        public string poster_path;
-        public string overview;
-        public List<Genre> genres; // Add a property for genres
-        // Other properties you might want to extract
-        [System.Serializable]
-        public class Genre
-        {
-            public int id;
-            public string name;
         }
     }
 }

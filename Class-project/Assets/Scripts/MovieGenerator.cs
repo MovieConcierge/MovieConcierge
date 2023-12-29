@@ -27,14 +27,14 @@ public class MovieGenerator : MonoBehaviour
     }
 
     IEnumerator Start()
-{
-    if (string.IsNullOrEmpty(apiKey))
     {
-        Debug.LogError("TMDb API key is not set. Please provide your API key.");
-        yield break;
-    }
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            Debug.LogError("TMDb API key is not set. Please provide your API key.");
+            yield break;
+        }
 
-    yield return StartCoroutine(FetchPopularMovieIds(NumberOfPages));
+        yield return StartCoroutine(FetchPopularMovieIds(NumberOfPages));
     }
 
     IEnumerator FetchPopularMovieIds(int pageCount)
@@ -77,7 +77,7 @@ public class MovieGenerator : MonoBehaviour
         //selecting a random movie ID and fetching detailed information.
         if (popularMovieIds.Count > 0)
         {
-            int currentMovieId = popularMovieIds[Random.Range(0, popularMovieIds.Count)];
+            currentMovieId = popularMovieIds[Random.Range(0, popularMovieIds.Count)];
             StartCoroutine(FetchMovieInformation(currentMovieId));
         }
         else
@@ -196,7 +196,7 @@ public class MovieGenerator : MonoBehaviour
     public void OnLikeButtonClick()
     {
         // Store the current movie ID in the likedMovies list
-        int currentMovieId = GetCurrentMovieId();
+        currentMovieId = GetCurrentMovieId();
         likedMovies.Add(currentMovieId);
 
         // Check if the number of liked movies reaches the maximum
@@ -259,10 +259,10 @@ public class MovieGenerator : MonoBehaviour
         List<int> unratedMovies = GetUnratedMovies();
 
         // Find a movie that hasn't been rated yet
-        int nextMovieId = FindNextUnratedMovie(unratedMovies);
+        currentMovieId = FindNextUnratedMovie(unratedMovies);
 
         // Fetch detailed information about the next movie
-        StartCoroutine(FetchMovieInformation(nextMovieId));
+        StartCoroutine(FetchMovieInformation(currentMovieId));
     }
 
     private List<int> GetUnratedMovies()
