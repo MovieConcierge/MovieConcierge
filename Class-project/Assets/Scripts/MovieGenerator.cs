@@ -19,6 +19,8 @@ public class MovieGenerator : MonoBehaviour
     public static event TextureFetchedAction OnTextureFetched;
     public int NumberOfPages = 3; //20 movies per page
     public int MaxLikedMovies = 4;
+    
+
     public static event System.Action OnVotingStartRequested;
 
     void Awake()
@@ -34,6 +36,7 @@ public class MovieGenerator : MonoBehaviour
             yield break;
         }
 
+        MaxLikedMovies = RoundToEven(MaxLikedMovies);
         yield return StartCoroutine(FetchPopularMovieIds(NumberOfPages));
     }
 
@@ -291,6 +294,29 @@ public class MovieGenerator : MonoBehaviour
         genresString = genresString.TrimEnd(',', ' ');
 
         return genresString;
+    }
+
+        public static int RoundUpToPowerOf2(int value)
+    {
+        if (value <= 0)
+            return 1;
+
+        int result = 1;
+        while (result < value)
+        {
+            result <<= 1; // Left shift by 1 to multiply by 2
+        }
+
+        return result;
+    }
+
+    public static int RoundToEven(int value)
+    {
+        if (value % 2 != 0)
+        {
+            value++;
+        }
+        return value;
     }
 
 }
