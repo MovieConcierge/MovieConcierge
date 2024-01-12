@@ -10,28 +10,38 @@ public class MovieDisplay : MonoBehaviour
     public GameObject moviePoster;
     public static string newTitle;
     public static Texture2D newPosterTexture;
+    private Sprite defaultSprite;
 
     void Start()
     {
         MovieGenerator.OnTextureFetched += DisplayMovie;
-
+        WaitGenerator.OnTextureFetchedWait += DisplayMovie;
         StartCoroutine(PushTextOnScreen());
     }
 
 
     IEnumerator PushTextOnScreen()
     {
-        yield return new WaitForSeconds(0.25f);
-
+        yield return new WaitForSeconds(0.1f);
         DisplayMovie();
     }
 
+
     void DisplayMovie()
     {
-        movieTitle.GetComponent<TextMeshProUGUI>().text = newTitle;
-        moviePoster.GetComponent<Image>().sprite = CreateSpriteFromTexture(newPosterTexture, moviePoster.GetComponent<RectTransform>());
+        if (movieTitle != null & moviePoster != null)
+        {
+            movieTitle.GetComponent<TextMeshProUGUI>().text = newTitle;
+            moviePoster.GetComponent<Image>().sprite = CreateSpriteFromTexture(newPosterTexture, moviePoster.GetComponent<RectTransform>());
+        }
+        else
+        {
+            Debug.Log("game objects are destroyed (happens in waitingRoom)");
+        }
 
     }
+
+
 
     Sprite CreateSpriteFromTexture(Texture2D texture, RectTransform rectTransform)
     {

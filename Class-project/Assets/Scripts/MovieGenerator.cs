@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.Networking;
 using System.Linq;
 using UnityEngine.SceneManagement;
@@ -18,10 +19,10 @@ public class MovieGenerator : MonoBehaviour
     public delegate void TextureFetchedAction();
     public static event TextureFetchedAction OnTextureFetched;
     public int NumberOfPages = 3; //20 movies per page
-    public int MaxLikedMovies = 4;
-    
+    public int MaxLikedMovies = 8;
 
     public static event System.Action OnVotingStartRequested;
+    private VotingSystem votingSystem;
 
     void Awake()
     {
@@ -36,7 +37,8 @@ public class MovieGenerator : MonoBehaviour
             yield break;
         }
 
-        MaxLikedMovies = RoundToEven(MaxLikedMovies);
+        votingSystem = FindObjectOfType<VotingSystem>();
+
         yield return StartCoroutine(FetchPopularMovieIds(NumberOfPages));
     }
 
@@ -89,7 +91,6 @@ public class MovieGenerator : MonoBehaviour
         }
     }
 
-
     IEnumerator FetchMovieInformation(int movieId)
     {
         // Fetch detailed information about the selected movie
@@ -124,8 +125,6 @@ public class MovieGenerator : MonoBehaviour
             }
         }
     }
-
-
     void SetMovieInformation(string title, string posterPath, string info, List<MovieApiResponse.Genre> genres)
     {
         // Update the movie information using the fetched data
@@ -142,8 +141,6 @@ public class MovieGenerator : MonoBehaviour
         PopUpManager.newOverview = info;
 
     }
-
-
 
     IEnumerator FetchTexture(string url)
     {
@@ -194,7 +191,6 @@ public class MovieGenerator : MonoBehaviour
             public string name;
         }
     }
-
 
     public void OnLikeButtonClick()
     {
@@ -294,29 +290,6 @@ public class MovieGenerator : MonoBehaviour
         genresString = genresString.TrimEnd(',', ' ');
 
         return genresString;
-    }
-
-        public static int RoundUpToPowerOf2(int value)
-    {
-        if (value <= 0)
-            return 1;
-
-        int result = 1;
-        while (result < value)
-        {
-            result <<= 1; // Left shift by 1 to multiply by 2
-        }
-
-        return result;
-    }
-
-    public static int RoundToEven(int value)
-    {
-        if (value % 2 != 0)
-        {
-            value++;
-        }
-        return value;
     }
 
 }

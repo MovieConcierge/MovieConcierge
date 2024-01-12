@@ -5,15 +5,11 @@ using UnityEngine.UI;
 public class PopUpManager : MonoBehaviour
 {
     public GameObject popUpPanel;
-    public GameObject background;
-    public Image moviePosterImage;
-    public Button infoButton;  // Reference to the info button
-    public Button likeButton;  // Reference to the like button
-    public Button dislikeButton;  // Reference to the dislike button
     public GameObject Genres;
     public GameObject Overview;
     public static string newOverview;
     public static string newGenres;
+    public Button infoButton;
 
     public void ShowPopUp()
     {
@@ -21,9 +17,7 @@ public class PopUpManager : MonoBehaviour
         Overview.GetComponent<TextMeshProUGUI>().text = newOverview;
 
         // Disable other elements in the canvas
-        DisableCanvasElements();
-
-        //background.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.8f);
+        //DisableCanvasElements();
 
         popUpPanel.SetActive(true);
     }
@@ -32,8 +26,6 @@ public class PopUpManager : MonoBehaviour
     {
         // Disable the info button, like button, dislike button, and movie title
         infoButton.interactable = false;
-        likeButton.interactable = false;
-        dislikeButton.interactable = false;
 
     }
 
@@ -41,15 +33,12 @@ public class PopUpManager : MonoBehaviour
     {
         // Enable the info button, like button, dislike button, and movie title
         infoButton.interactable = true;
-        likeButton.interactable = true;
-        dislikeButton.interactable = true;
-
     }
 
     public void ClosePopUp()
     {
         // Enable other elements in the canvas
-        EnableCanvasElements();
+        //EnableCanvasElements();
 
         popUpPanel.SetActive(false);
         // Additional cleanup or actions can be added here if needed

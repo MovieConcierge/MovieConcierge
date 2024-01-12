@@ -33,6 +33,7 @@ public class GenreSettings : MonoBehaviour
                 }
             }
         }
+        Debug.Log(selectedGenres.Count);
 
         // Now, you can save the selectedGenres list using PlayerPrefs or perform any other actions.
         SaveSelectedGenres();
@@ -40,11 +41,17 @@ public class GenreSettings : MonoBehaviour
 
     private void SaveSelectedGenres()
     {
-        // Create a string to represent the selected genres
-        string selectedGenresString = string.Join(",", selectedGenres.ToArray());
+        if (selectedGenres.Count > 0)
+        {
+            string selectedGenresString = string.Join(",", selectedGenres.ToArray());
+            PlayerPrefs.SetString("SelectedGenres", selectedGenresString);
 
-        // Save the selected genres to PlayerPrefs
-        PlayerPrefs.SetString("SelectedGenres", selectedGenresString);
+        }
+        else
+        {
+            string selectedGenresString = "";
+            PlayerPrefs.SetString("SelectedGenres", selectedGenresString);  
+        }
     }
 
     Dictionary<string, int> genreNameToIdMap = new Dictionary<string, int>

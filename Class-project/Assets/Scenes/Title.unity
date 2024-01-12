@@ -293,7 +293,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 113130320}
-  - component: {fileID: 113130321}
+  - component: {fileID: 113130322}
+  - component: {fileID: 113130323}
   m_Layer: 0
   m_Name: TitleController
   m_TagString: Untagged
@@ -316,7 +317,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &113130321
+--- !u!114 &113130322
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -325,7 +326,40 @@ MonoBehaviour:
   m_GameObject: {fileID: 113130319}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9481dc198553874488bfbd3f360ce171, type: 3}
+  m_Script: {fileID: 11500000, guid: 2126794a29607d74bab8e973eef02f8b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  genreToggles:
+  - {fileID: 1599644185}
+  - {fileID: 494327656}
+  - {fileID: 1041249134}
+  - {fileID: 1419944211}
+  - {fileID: 427329528}
+  - {fileID: 1383319520}
+  - {fileID: 1712274234}
+  - {fileID: 904064248}
+  - {fileID: 59458223}
+  - {fileID: 670359641}
+  - {fileID: 933786028}
+  - {fileID: 817998676}
+  - {fileID: 1382648494}
+  - {fileID: 480593581}
+  - {fileID: 1658190978}
+  - {fileID: 1931966023}
+  - {fileID: 1451826931}
+  - {fileID: 314634982}
+  - {fileID: 1659482493}
+  confirmButton: {fileID: 1587669918}
+--- !u!114 &113130323
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 113130319}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9ba4645c83b0c7448195ead28d8e63d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   mainScreenCanvas: {fileID: 444414937}
@@ -3290,7 +3324,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 113130321}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: TitleCanvasController, Assembly-CSharp
         m_MethodName: ShowGenres
         m_Mode: 1
@@ -5943,7 +5977,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 113130321}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: TitleCanvasController, Assembly-CSharp
         m_MethodName: ShowMainScreen
         m_Mode: 1
@@ -7117,7 +7151,6 @@ GameObject:
   - component: {fileID: 1939304307}
   - component: {fileID: 1939304306}
   - component: {fileID: 1939304309}
-  - component: {fileID: 1939304310}
   m_Layer: 5
   m_Name: Group
   m_TagString: Untagged
@@ -7243,9 +7276,9 @@ MonoBehaviour:
     callback:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 1939304310}
-          m_TargetAssemblyTypeName: GroupButton, Assembly-CSharp
-          m_MethodName: onClick
+        - m_Target: {fileID: 113130323}
+          m_TargetAssemblyTypeName: TitleMenuScript, Assembly-CSharp
+          m_MethodName: OnClickLoadGroupScene
           m_Mode: 1
           m_Arguments:
             m_ObjectArgument: {fileID: 0}
@@ -7255,18 +7288,6 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
---- !u!114 &1939304310
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1939304304}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15f2dba24f24b494bb181e362330a493, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1943127600
 GameObject:
   m_ObjectHideFlags: 0
@@ -7566,7 +7587,6 @@ GameObject:
   - component: {fileID: 2070044935}
   - component: {fileID: 2070044934}
   - component: {fileID: 2070044938}
-  - component: {fileID: 2070044939}
   m_Layer: 5
   m_Name: Solo
   m_TagString: Untagged
@@ -7636,7 +7656,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2070044935}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 113130323}
+        m_TargetAssemblyTypeName: TitleMenuScript, Assembly-CSharp
+        m_MethodName: OnClickLoadSoloScene
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2070044935
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7687,35 +7719,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Delegates:
-  - eventID: 4
-    callback:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 2070044939}
-          m_TargetAssemblyTypeName: SoloButton, Assembly-CSharp
-          m_MethodName: onClick
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
---- !u!114 &2070044939
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2070044932}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6afe5e38db4bb474cafec0b9122096dd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Delegates: []
 --- !u!1 &2077155390
 GameObject:
   m_ObjectHideFlags: 0
@@ -7796,8 +7800,8 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 113130320}
+  - {fileID: 1189590845}
   - {fileID: 963194228}
   - {fileID: 705507995}
   - {fileID: 444414938}
   - {fileID: 945340479}
-  - {fileID: 1189590845}

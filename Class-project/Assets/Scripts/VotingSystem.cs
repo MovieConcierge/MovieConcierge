@@ -2,10 +2,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.Networking;
 using System.Linq;
 using TMPro;
+using Photon.Pun;
+using Photon.Realtime;
 
 public class VotingSystem : MonoBehaviour
 {
@@ -25,11 +28,13 @@ public class VotingSystem : MonoBehaviour
     public GameObject movieBPoster;
     public Button movieBButton;
 
+    private bool multiGame;
     private MovieGenerator movieGenerator; // Reference to the MovieGenerator script
 
     void Start()
     {
         movieGenerator = FindObjectOfType<MovieGenerator>(); // Find the MovieGenerator script in the scene
+        multiGame = PlayerPrefs.GetInt("MultiGame", 0) == 1;
 
         // Subscribe to the event to start voting when requested
         MovieGenerator.OnVotingStartRequested += StartVotingIfRequested;
@@ -38,7 +43,7 @@ public class VotingSystem : MonoBehaviour
     void StartVotingIfRequested()
     {
         // Check if LikedMovies is not null and has items
-        if (LikedMovies != null && LikedMovies.Count > 1)
+        if (LikedMovies != null && LikedMovies.Count > 0)
         {
             CreateMatchups(LikedMovies);
             SetMatchup();
@@ -49,9 +54,34 @@ public class VotingSystem : MonoBehaviour
         }
     }
 
-    void CreateMatchups(List<int> movieIds)
+void CreateMatchups(List<int> movieIds)
+{
+    ShuffleLikedMovies();
+    // Handle the case where there is an odd number of movies
+    if (movieIds.Count % 2 != 0)
     {
-        ShuffleLikedMovies();
+        // Save the last movie ID before removing it from the list
+        int remainingMovieId = movieIds[movieIds.Count - 1];
+        movieIds.RemoveAt(movieIds.Count - 1);
+
+        // Continue with creating matchups for the remaining movies
+        while (movieIds.Count > 1)
+        {
+            int movieA = movieIds[0];
+            movieIds.RemoveAt(0);
+
+            int movieB = movieIds[0];
+            movieIds.RemoveAt(0);
+
+            matchups.Enqueue(new Matchup(movieA, movieB));
+        }
+
+        // Add the remaining movie back to the list
+        movieIds.Add(remainingMovieId);
+    }
+    else
+    {
+        // Create matchups for all movies if the count is even
         while (movieIds.Count > 1)
         {
             int movieA = movieIds[0];
@@ -63,6 +93,8 @@ public class VotingSystem : MonoBehaviour
             matchups.Enqueue(new Matchup(movieA, movieB));
         }
     }
+}
+
 
 void RecordVote(int winnerId, int loserId)
 {
@@ -70,7 +102,7 @@ void RecordVote(int winnerId, int loserId)
     LikedMovies.Add(winnerId);
 
     // You can implement your own logic to record the vote for the selected movie   
-    Debug.Log("Vote recorded for movie ID: " + winnerId + " liked movies count: " + LikedMovies.Count + " Matchups left: " + matchups.Count);
+    //Debug.Log("Vote recorded for movie ID: " + winnerId + " liked movies count: " + LikedMovies.Count + " Matchups left: " + matchups.Count);
 
     movieAButton.interactable = false;
     movieBButton.interactable = false;
@@ -89,28 +121,19 @@ void SetMatchup()
     }
     else
     {
-        Debug.Log("Voting process completed. No more matchups available.");
+        //Debug.Log("Voting process completed. No more matchups available.");
 
         // Disable buttons when there are no more matchups
         movieAButton.interactable = false;
         movieBButton.interactable = false;
 
         // Check if LikedMovies has only one item (the winner) before determining the winner
-        if (LikedMovies.Count == 1)
-        {
-            Debug.Log("Tournament completed! The winner is Movie ID: " + LikedMovies[0]);
-        }
-        else
-        {
-            DetermineWinner();
-        }
+        DetermineWinner();
     }
 }
 
 void DetermineWinner()
 {
-    Debug.Log("Voting process completed. Determining the winner...");
-
     if (LikedMovies.Count > 1)
     {
         currentRound++;
@@ -119,8 +142,23 @@ void DetermineWinner()
     }
     else if (LikedMovies.Count == 1)
     {
-        Debug.Log("Tournament completed! The winner is Movie ID: " + LikedMovies[0]);
+        int winnerId = LikedMovies[0];
+
+        Debug.Log("Tournament completed! The winner is Movie ID: " + winnerId);
+        
+        PlayerPrefs.SetInt("WinnerId", winnerId);
+        PlayerPrefs.Save();
+
+        if (multiGame)
+        {
+            object[] eventData = new object[] { winnerId };
+            RaiseEventOptions raiseEventOptions = new RaiseEventOptions { Receivers = ReceiverGroup.All };
+            PhotonNetwork.RaiseEvent(159, eventData, raiseEventOptions, ExitGames.Client.Photon.SendOptions.SendReliable);
+        }
+        
+        SceneManager.LoadScene("WaitRoom");
     }
+    
     else
     {
         Debug.Log("No more matchups. LikedMovies is empty.");
@@ -204,7 +242,10 @@ void DetermineWinner()
         }));
     }
 
-
+    public void OnClickStopButton()
+    {
+        SceneManager.LoadScene("Title");    
+    }
 
     string ConvertGenresToString(List<Genre> genres)
     {
