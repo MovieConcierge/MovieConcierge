@@ -24,7 +24,7 @@ public class TitleMenuScript : MonoBehaviour
     {
         // Set multiGame to 1 for Group scene
         PlayerPrefs.SetInt("multiGame", 1);
-        SceneManager.LoadScene("Group");
+        SceneManager.LoadScene("Lobby");
     }
 
     public void ShowGenres()

@@ -16,6 +16,7 @@ public class MovieDisplay : MonoBehaviour
     {
         MovieGenerator.OnTextureFetched += DisplayMovie;
         WaitGenerator.OnTextureFetchedWait += DisplayMovie;
+        MultiVoting.OnTextureFetchedMulti += DisplayMovie;
         StartCoroutine(PushTextOnScreen());
     }
 
@@ -36,7 +37,7 @@ public class MovieDisplay : MonoBehaviour
         }
         else
         {
-            Debug.Log("game objects are destroyed (happens in waitingRoom)");
+            Debug.Log("game objects are destroyed MovieDisplay (happens in waitingRoom)");
         }
 
     }

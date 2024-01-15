@@ -6,9 +6,10 @@ using UnityEngine.Networking;
 using System.Linq;
 using UnityEngine.SceneManagement;
 using Photon.Pun;
+using Photon.Realtime;
 using TMPro;
 
-public class WaitGenerator : MonoBehaviour
+public class WaitGenerator : MonoBehaviourPunCallbacks
 {
     public string apiKey = "81e872ea74c4fe76eed2dd856b47223d"; // Replace with your TMDb API key
     private List<string> selectedGenres = new List<string>();
@@ -17,7 +18,11 @@ public class WaitGenerator : MonoBehaviour
 
     public GameObject SceneTitle;
     private int winnerId;
+    private int eventwinnerId;
     private bool multiGame;
+
+    public List<int> winners = new List<int>();
+
 
     void Awake()
     {
@@ -27,6 +32,10 @@ public class WaitGenerator : MonoBehaviour
 
     IEnumerator Start()
     {
+        PhotonNetwork.NetworkingClient.EventReceived += OnPhotonEvent;
+
+        FetchWinnersListFromRoomProperties();
+
         if (string.IsNullOrEmpty(apiKey))
         {
             Debug.LogError("TMDb API key is not set. Please provide your API key.");
@@ -41,24 +50,7 @@ public class WaitGenerator : MonoBehaviour
 
         yield return StartCoroutine(OnTournamentWinnerSelected(winnerId));
     }
-
-    IEnumerator OnTournamentWinnerSelected(int winnerId)
-    {
-        if (multiGame)
-        {
-            SceneTitle.GetComponent<TextMeshProUGUI>().text = "Waiting Room don't leave!";
-        }
-        else
-        {
-            SceneTitle.GetComponent<TextMeshProUGUI>().text = "Movie Selected";
-        }
-
-        SceneTitle.gameObject.SetActive(true);
-        StartCoroutine(FetchMovieInformation(winnerId));
-
-        yield return null;
-
-    }
+    #region MovieGenerator
 
     IEnumerator FetchMovieInformation(int movieId)
     {
@@ -130,16 +122,6 @@ public class WaitGenerator : MonoBehaviour
         }
     }
     
-    public void OnClickExitButton()
-    {
-        if (multiGame)
-        {
-            PhotonNetwork.LeaveRoom();
-        }
-        SceneTitle.gameObject.SetActive(false);
-        SceneManager.LoadScene("Title");
-    }
-
     [System.Serializable]
     public class MovieApiResponse
     {
@@ -155,7 +137,6 @@ public class WaitGenerator : MonoBehaviour
             public string name;
         }
     }
-
     string ConvertGenresToString(List<MovieApiResponse.Genre> genres)
     {
         string genresString = "";
@@ -170,4 +151,100 @@ public class WaitGenerator : MonoBehaviour
 
         return genresString;
     }
+    #endregion
+
+    IEnumerator OnTournamentWinnerSelected(int winnerId)
+    {
+        if (multiGame)
+        {
+            SceneTitle.GetComponent<TextMeshProUGUI>().text = "Waiting Room don't leave!";
+        }
+        else
+        {
+            SceneTitle.GetComponent<TextMeshProUGUI>().text = "Movie Selected";
+        }
+
+        SceneTitle.gameObject.SetActive(true);
+        StartCoroutine(FetchMovieInformation(winnerId));
+
+        yield return null;
+
+    }
+    public void OnClickExitButton()
+    {
+        if (multiGame)
+        {
+            PhotonNetwork.LeaveRoom();
+        }
+        SceneTitle.gameObject.SetActive(false);
+        SceneManager.LoadScene("Title");
+    }
+
+    #region Photon check if all players finished voting 
+    public void OnDestroy()
+    {
+        PhotonNetwork.NetworkingClient.EventReceived -= OnPhotonEvent;
+    }
+
+    private void FetchWinnersListFromRoomProperties()
+    {
+        if (PhotonNetwork.InRoom)
+        {
+            if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("Winners", out object winnersObj))
+            {
+                string winnersString = (string)winnersObj;
+                winners = winnersString.Split(',')
+                .Where(s => int.TryParse(s, out _))
+                .Select(int.Parse)
+                .ToList();
+            }
+        }
+    }
+    public void OnPhotonEvent(ExitGames.Client.Photon.EventData photonEvent)
+    {
+        if (photonEvent.Code == 159)
+        {
+            int eventwinnerId = (int)photonEvent.CustomData;
+            if (!winners.Contains(eventwinnerId))
+            {
+                winners.Add(eventwinnerId);
+
+                // Update the custom property on the Photon room
+                UpdateWinnersCustomProperty();
+            }
+        }
+    }
+
+    public void UpdateWinnersCustomProperty()
+    {
+        // Convert the winners list to a format that can be easily sent through Photon (e.g., a string)
+        string winnersString = string.Join(",", winners.Select(w => w.ToString()).ToArray());
+
+        // Set the custom property on the Photon room
+        var webFlags = new WebFlags(0x1); // WebFlags.HttpForward
+        PhotonNetwork.CurrentRoom.SetCustomProperties(new ExitGames.Client.Photon.Hashtable { {"Winners", winnersString} }, null, webFlags);
+    }
+
+    public override void OnRoomPropertiesUpdate(ExitGames.Client.Photon.Hashtable propertiesThatChanged)
+    {
+        Debug.Log("WAITROOM OnRoomPropertiesUpdate");
+        // Check if the "Winners" custom property has changed
+        if (propertiesThatChanged.ContainsKey("Winners"))
+        {
+            // Extract the updated winners string and update the local list
+            string winnersString = (string)propertiesThatChanged["Winners"];
+            winners = winnersString.Split(',').Select(int.Parse).ToList();
+
+            if (winners.Count == PhotonNetwork.CurrentRoom.PlayerCount)
+            {
+                //Remove duplicates
+                winners = winners.Distinct().ToList();
+                winnersString = string.Join(",", winners.Select(w => w.ToString()).ToArray());
+                PhotonNetwork.CurrentRoom.SetCustomProperties(new ExitGames.Client.Photon.Hashtable { {"Winners", winnersString} });
+
+                PhotonNetwork.LoadLevel("MultiVoting");
+            }
+        }
+    }
+    #endregion
 }

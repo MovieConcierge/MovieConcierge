@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Photon.Pun;
 using Photon.Realtime;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.SceneManagement;
@@ -10,57 +11,105 @@ using TMPro;
 
 public class LobbyManager : MonoBehaviourPunCallbacks
 {
+    #region variables
     public TMP_InputField playerNameInput;
     public TMP_InputField createdLobbyNameInput;
     public TMP_InputField joinedLobbyNameInput;
     public GameObject playerNameCanvas;
     public GameObject lobbyCanvas;
     public GameObject roomCanvas;
+    public GameObject RoomName;
     public TextMeshProUGUI connectButtonText;
+    public Button connectButton;
+    public Button createRoomButton;
+    public Button joinRoomButton;
     public Button startButton;
     public Button leaveRoomButton;
     public GameObject lobbyPlayerList;
-    private List<int> winners = new List<int>();
 
+    #endregion
 
     private void Start()
     {
         PhotonNetwork.AddCallbackTarget(this);
+        PhotonNetwork.AutomaticallySyncScene = true; //for starting the game
 
-        PhotonNetwork.AutomaticallySyncScene = true;
         lobbyCanvas.SetActive(false);
         roomCanvas.SetActive(false);
         leaveRoomButton.onClick.AddListener(OnClickLeaveRoomButton);
     }
 
+    #region Photon connection and room management
     public void OnClickConnect()
     {
+        if (PhotonNetwork.IsConnected)
+        {
+            //Player is trying to connect without having disconnected before
+            PhotonNetwork.Disconnect();
+        }
+        
+
         if (playerNameInput.text.Length >= 1)
         {
             PhotonNetwork.NickName = playerNameInput.text;
             connectButtonText.text = "Connecting...";
+
+            // Start the connection attempt
             PhotonNetwork.ConnectUsingSettings();
+            connectButton.interactable = false;
+            
         }
     }
 
     public override void OnConnectedToMaster()
     {
+        createRoomButton.interactable = true;
+        joinRoomButton.interactable = true;
+        connectButton.interactable = true;
         playerNameCanvas.gameObject.SetActive(false);
         lobbyCanvas.gameObject.SetActive(true);
 
         PhotonNetwork.JoinLobby();
-        PhotonNetwork.NetworkingClient.EventReceived += OnPhotonEvent;
     }
 
     public void OnClickCreateRoomButton()
     {
-        PhotonNetwork.CreateRoom(createdLobbyNameInput.text, new RoomOptions { MaxPlayers = 10 });
+        createRoomButton.interactable = false;
+        joinRoomButton.interactable = false;
+        if (string.IsNullOrEmpty(createdLobbyNameInput.text))
+        {
+            Debug.LogError("Lobby name cannot be empty. Please enter a valid lobby name.");
+            // Provide feedback to the user or take appropriate action.
+            return;
+        }
+
+        // Create room with custom properties
+        RoomOptions roomOptions = new RoomOptions
+        {
+            MaxPlayers = 10,
+            CustomRoomProperties = new ExitGames.Client.Photon.Hashtable { { "Winners", "" } },
+            CustomRoomPropertiesForLobby = new string[] { "Winners" }
+        };
+
+        PhotonNetwork.CreateRoom(createdLobbyNameInput.text, roomOptions);
+        RoomName.GetComponent<TextMeshProUGUI>().text = "Room: " + createdLobbyNameInput.text;
     }
 
     public void OnClickJoinRoomButton()
     {
+        createRoomButton.interactable = false;
+        joinRoomButton.interactable = false;
+        if (string.IsNullOrEmpty(joinedLobbyNameInput.text))
+        {
+            Debug.LogError("Lobby name cannot be empty. Please enter a valid lobby name.");
+            // Provide feedback to the user or take appropriate action.
+            return;
+        }
+        RoomName.GetComponent<TextMeshProUGUI>().text = "Room: " + joinedLobbyNameInput.text;
         PhotonNetwork.JoinRoom(joinedLobbyNameInput.text);
     }
+
+
 
     public override void OnCreateRoomFailed(short returnCode, string message)
     {
@@ -68,44 +117,60 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         // Handle the failure (e.g., show an error message to the user)
     }
 
-
     public void OnClickStartButton()
     {
         if (PhotonNetwork.IsMasterClient)
         {
-            PhotonNetwork.LoadLevel("Solo");
+            StartCoroutine(DelayedLoadScene());
         }
     }
+
+    private IEnumerator DelayedLoadScene()
+    {
+        
+        yield return new WaitForSeconds(0.5f); // Adjust the delay duration as needed
+
+        if (PhotonNetwork.CurrentRoom.PlayerCount > 1)
+        {
+            PhotonNetwork.LoadLevel("Solo");
+        }
+        else
+        {
+            Debug.Log("Cannot start the game. There should be at least 2 players in the room.");
+        }
+    }
+
 
     public void OnClickLeaveRoomButton()
     {
         if (PhotonNetwork.InRoom)
         {
-            if (PhotonNetwork.IsMasterClient && PhotonNetwork.CurrentRoom.PlayerCount > 1) MigrateMaster();
+            if (PhotonNetwork.IsMasterClient && PhotonNetwork.CurrentRoom.PlayerCount >= 1) MigrateMaster();
             else
             {
                 PhotonNetwork.DestroyPlayerObjects(PhotonNetwork.LocalPlayer);
-                PhotonNetwork.LeaveRoom();
             }
         }
+        PhotonNetwork.LeaveRoom();
     }
 
-    private void MigrateMaster()
+    public void MigrateMaster()
     {
         var dict = PhotonNetwork.CurrentRoom.Players;
         if (PhotonNetwork.SetMasterClient(dict[dict.Count - 1]))
             PhotonNetwork.LeaveRoom();
     }
 
-
     public override void OnLeftRoom()
     {
-        SceneManager.LoadScene("Group");
+        roomCanvas.gameObject.SetActive(false);
+        lobbyCanvas.gameObject.SetActive(true);
+
+        if (!PhotonNetwork.InRoom && PhotonNetwork.NetworkClientState == ClientState.ConnectedToMasterServer)
+        {
+            PhotonNetwork.JoinLobby();
+        }
     }
-
-
-
-
 
     public void OnClickReturnToMenuButton()
     {
@@ -117,29 +182,12 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     {
         lobbyCanvas.SetActive(false);
         roomCanvas.SetActive(true);
-        startButton.gameObject.SetActive(PhotonNetwork.IsMasterClient);
+        
         UpdatePlayerList();
     }
 
-
-    public override void OnPlayerEnteredRoom(Player newPlayer)
+    public void UpdatePlayerList()
     {
-        UpdatePlayerList();
-    }
-
-    public override void OnPlayerLeftRoom(Player otherPlayer)
-    {
-        UpdatePlayerList();
-    }
-
-    public override void OnMasterClientSwitched(Player newMasterClient)
-    {
-        startButton.gameObject.SetActive(PhotonNetwork.IsMasterClient);
-    }
-
-    private void UpdatePlayerList()
-    {
-        Debug.Log("hi4");
         string playerListText = "Players in the Lobby:\n";
         foreach (Player player in PhotonNetwork.PlayerList)
         {
@@ -148,40 +196,25 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         lobbyPlayerList.GetComponent<TextMeshProUGUI>().text = playerListText;
     }
 
-    private void OnPhotonEvent(ExitGames.Client.Photon.EventData photonEvent)
+    public override void OnPlayerEnteredRoom(Player newPlayer)
     {
-        if (photonEvent.Code == 159)
-        {
-            int winnerId = (int)photonEvent.CustomData;
-
-            if (!winners.Contains(winnerId))
-            {
-                winners.Add(winnerId);
-
-                // Update the custom property on the Photon room
-                UpdateWinnersCustomProperty();
-            }
-        }
+        startButton.gameObject.SetActive(PhotonNetwork.CurrentRoom.PlayerCount > 1 && PhotonNetwork.IsMasterClient);
+        UpdatePlayerList();
     }
 
-    private void UpdateWinnersCustomProperty()
+    public override void OnPlayerLeftRoom(Player otherPlayer)
     {
-        // Convert the winners list to a format that can be easily sent through Photon (e.g., a string)
-        string winnersString = string.Join(",", winners.Select(w => w.ToString()).ToArray());
-
-        // Set the custom property on the Photon room
-        PhotonNetwork.CurrentRoom.SetCustomProperties(new ExitGames.Client.Photon.Hashtable { { "Winners", winnersString } });
+        startButton.gameObject.SetActive(PhotonNetwork.CurrentRoom.PlayerCount > 1 && PhotonNetwork.IsMasterClient);
+        UpdatePlayerList();
     }
 
-    public override void OnRoomPropertiesUpdate(ExitGames.Client.Photon.Hashtable propertiesThatChanged)
+    public override void OnMasterClientSwitched(Player newMasterClient)
     {
-        // Check if the "Winners" custom property has changed
-        if (propertiesThatChanged.ContainsKey("Winners"))
-        {
-            // Extract the updated winners string and update the local list
-            string winnersString = (string)propertiesThatChanged["Winners"];
-            winners = winnersString.Split(',').Select(int.Parse).ToList();
-        }
+        startButton.gameObject.SetActive(PhotonNetwork.CurrentRoom.PlayerCount > 1 && PhotonNetwork.IsMasterClient);
     }
+
+    #endregion
+    
+
 
 }

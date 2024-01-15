@@ -5,6 +5,8 @@ using UnityEngine.UI;
 using UnityEngine.Networking;
 using System.Linq;
 using UnityEngine.SceneManagement;
+using Photon.Pun;
+using Photon.Realtime;
 
 public class MovieGenerator : MonoBehaviour
 {
@@ -31,6 +33,8 @@ public class MovieGenerator : MonoBehaviour
 
     IEnumerator Start()
     {
+        PhotonNetwork.AutomaticallySyncScene = false;//Players are independent now
+
         if (string.IsNullOrEmpty(apiKey))
         {
             Debug.LogError("TMDb API key is not set. Please provide your API key.");
@@ -42,6 +46,7 @@ public class MovieGenerator : MonoBehaviour
         yield return StartCoroutine(FetchPopularMovieIds(NumberOfPages));
     }
 
+    #region TMDB API Info Fetching
     IEnumerator FetchPopularMovieIds(int pageCount)
     {
         string selectedGenresString = string.Join(",", selectedGenres);
@@ -137,7 +142,6 @@ public class MovieGenerator : MonoBehaviour
 
         // Assign the concatenated genres string to PopUpManager.newGenres
         PopUpManager.newGenres = ConvertGenresToString(genres);
-
         PopUpManager.newOverview = info;
 
     }
@@ -162,7 +166,9 @@ public class MovieGenerator : MonoBehaviour
         }
     }
 
+    #endregion
 
+    #region Data structures
     [System.Serializable]
     public class PopularMoviesApiResponse
     {
@@ -192,6 +198,9 @@ public class MovieGenerator : MonoBehaviour
         }
     }
 
+    #endregion
+   
+    #region Buttons
     public void OnLikeButtonClick()
     {
         // Store the current movie ID in the likedMovies list
@@ -245,7 +254,9 @@ public class MovieGenerator : MonoBehaviour
         // Set movie information before transitioning to voting canvas
         ShowVotingCanvas();
     }
+    #endregion
 
+    #region Movie transition methods
     private int GetCurrentMovieId()
     {
         // Return the stored current movie ID
@@ -291,5 +302,7 @@ public class MovieGenerator : MonoBehaviour
 
         return genresString;
     }
+
+#endregion
 
 }
