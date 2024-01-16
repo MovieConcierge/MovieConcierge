@@ -181,10 +181,6 @@ public class WaitGenerator : MonoBehaviourPunCallbacks
     }
 
     #region Photon check if all players finished voting 
-    public void OnDestroy()
-    {
-        PhotonNetwork.NetworkingClient.EventReceived -= OnPhotonEvent;
-    }
 
     private void FetchWinnersListFromRoomProperties()
     {
