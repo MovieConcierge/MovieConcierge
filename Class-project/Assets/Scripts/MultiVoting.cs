@@ -31,7 +31,7 @@ public class MultiVoting : MonoBehaviour
     public TextMeshProUGUI feedbackText; // Assign a TextMeshProUGUI object in the editor
     List<int> selectedMovieIds = new List<int>();
     List<List <int>> playerMovieRankings = new List<List <int>> ();
-
+    private List<int> grandWinners;
     void Start()
     {
         if (PhotonNetwork.IsMasterClient)
@@ -361,8 +361,109 @@ public class MultiVoting : MonoBehaviour
             if (playerMovieRankings.Count == PhotonNetwork.PlayerList.Length)
             {
                 // All players have submitted their rankings
-                // MyAlgorithm(rankings);
+                RankedPairsVoting rankedPairs = new RankedPairsVoting();
+                grandWinners = rankedPairs.GetWinners(playerMovieRankings);
             }
+        }
+    }
+    public class RankedPairsVoting
+    {
+        private Dictionary<int, Dictionary<int, int>> CalculatePairwisePreferences(List<List<int>> playerMovieRankings)
+        {
+            var preferences = new Dictionary<int, Dictionary<int, int>>();
+
+            foreach (var ranking in playerMovieRankings)
+            {
+                for (int i = 0; i < ranking.Count; i++)
+                {
+                    if (!preferences.ContainsKey(ranking[i]))
+                        preferences[ranking[i]] = new Dictionary<int, int>();
+
+                    for (int j = i + 1; j < ranking.Count; j++)
+                    {
+                        if (!preferences[ranking[i]].ContainsKey(ranking[j]))
+                            preferences[ranking[i]][ranking[j]] = 0;
+
+                        preferences[ranking[i]][ranking[j]] += 1;
+                    }
+                }
+            }
+
+            return preferences;
+        }
+
+        private List<Tuple<int, int, int>> SortPairs(Dictionary<int, Dictionary<int, int>> preferences)
+        {
+            var pairs = new List<Tuple<int, int, int>>();
+
+            foreach (var movie1 in preferences)
+            {
+                foreach (var movie2 in movie1.Value)
+                {
+                    int opposite = preferences.ContainsKey(movie2.Key) && preferences[movie2.Key].ContainsKey(movie1.Key)
+                                ? preferences[movie2.Key][movie1.Key]
+                                : 0;
+
+                    if (movie2.Value > opposite)
+                    {
+                        pairs.Add(new Tuple<int, int, int>(movie1.Key, movie2.Key, movie2.Value - opposite));
+                    }
+                }
+            }
+
+            return pairs.OrderByDescending(p => p.Item3).ToList();
+        }
+
+        private Dictionary<int, HashSet<int>> LockPairs(List<Tuple<int, int, int>> sortedPairs)
+        {
+            var lockedPairs = new Dictionary<int, HashSet<int>>();
+            foreach (var pair in sortedPairs)
+            {
+                if (!CreatesCycle(lockedPairs, pair.Item1, pair.Item2))
+                {
+                    if (!lockedPairs.ContainsKey(pair.Item1))
+                        lockedPairs[pair.Item1] = new HashSet<int>();
+
+                    lockedPairs[pair.Item1].Add(pair.Item2);
+                }
+            }
+            return lockedPairs;
+        }
+
+        private bool CreatesCycle(Dictionary<int, HashSet<int>> lockedPairs, int winner, int loser, int? start = null)
+        {
+            if (start == null) start = winner;
+
+            if (lockedPairs.ContainsKey(loser))
+            {
+                if (lockedPairs[loser].Contains(start.Value)) return true;
+
+                foreach (var nextLoser in lockedPairs[loser])
+                {
+                    if (CreatesCycle(lockedPairs, winner, nextLoser, start)) return true;
+                }
+            }
+
+            return false;
+        }
+
+        private List<int> FindWinners(Dictionary<int, HashSet<int>> lockedPairs, HashSet<int> movieIds)
+        {
+            // Find all candidates who are not defeated by anyone else
+            var potentialWinners = movieIds.Where(movieId => 
+                lockedPairs.Values.All(losers => !losers.Contains(movieId))).ToList();
+
+            return potentialWinners;
+        }
+
+
+        public List<int> GetWinners(List<List<int>> playerMovieRankings)
+        {
+            var movieIds = playerMovieRankings.SelectMany(x => x).ToHashSet();    
+            var preferences = CalculatePairwisePreferences(playerMovieRankings);
+            var sortedPairs = SortPairs(preferences);
+            var lockedPairs = LockPairs(sortedPairs);
+            return FindWinners(lockedPairs, movieIds);
         }
     }
 }
