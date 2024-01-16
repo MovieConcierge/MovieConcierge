@@ -15,7 +15,6 @@ public class MultiVoting : MonoBehaviour
     public string apiKey = "81e872ea74c4fe76eed2dd856b47223d"; // Replace with your TMDb API key
     public Canvas MovieViewCanvas;
     public Canvas RankingCanvas;
-
     private List<int> winnersList; // List of movie IDs
     private List<MovieDetails> movieDetailsList = new List<MovieDetails>(); // List of MovieDetails
     public delegate void TextureFetchedMultiAction();
@@ -24,37 +23,56 @@ public class MultiVoting : MonoBehaviour
 
     private Dictionary<int, Dropdown> movieDropdowns = new Dictionary<int, Dropdown>();
     private Dictionary<int, int> userPreferences = new Dictionary<int, int>();
+    public Sprite ClearButtonSprite;
+    public GameObject rankPrefab; // Assign this in the editor
+    int nbMovies; 
 
     void Start()
     {
         // Initialize winnersList with movie IDs (populate it with actual data)
         string winnersString = (string)PhotonNetwork.CurrentRoom.CustomProperties["Winners"];
-        winnersList = new List<int>(Array.ConvertAll(winnersString.Split(','), int.Parse));
+        winnersList = winnersString.Split(',').Select(int.Parse).ToList();
 
-        Debug.Log(winnersList.Count);
-        Debug.Log(winnersList[0]);
-        Debug.Log(winnersList[1]);
-
+        nbMovies = winnersList.Count;
         // Fetch details for the winnersList
         StartCoroutine(FetchMovieDetails(winnersList));
-
-        // Display the first movie
-        DisplayMovie();
-
-        InstantiateDropdowns();
     }
 
     #region Movie List Canvas methods
 
+    void OnMovieDetailsFetched()
+    {
+        // Display the first movie
+        DisplayMovie();
+
+        Debug.Log("start dropdowns");
+        onClickGoRank(); //Go to the ranking canvas to setup the dropdowns
+        InstantiateDropdowns();
+        foreach (var dropdownPair in movieDropdowns)
+        {
+            dropdownPair.Value.onValueChanged.AddListener(delegate { OnDropdownValueChanged(dropdownPair.Value); });
+        }
+        // Populate each dropdown initially
+        foreach (var dropdownPair in movieDropdowns)
+        {
+            PopulateDropdownOptions(dropdownPair.Value, dropdownPair.Key);
+        }
+
+        Debug.Log("finished dropdowns");
+    }
+    int mod(int x, int m)  
+    {
+        return (x%m + m)%m;
+    }
     public void ShowNextMovie()
     {
-        currentIndex = (currentIndex + 1) % winnersList.Count;
+        currentIndex = mod((currentIndex + 1), nbMovies);
         DisplayMovie();
     }
 
     public void ShowPreviousMovie()
     {
-        currentIndex = (currentIndex - 1 + winnersList.Count) % winnersList.Count;
+        currentIndex = mod((currentIndex - 1), nbMovies);
         DisplayMovie();
     }
 
@@ -101,6 +119,7 @@ public class MultiVoting : MonoBehaviour
                 }
             }
         }
+        OnMovieDetailsFetched();
     }
 
     IEnumerator FetchTexture(string url)
@@ -170,70 +189,53 @@ public class MultiVoting : MonoBehaviour
     #endregion
     void InstantiateDropdowns()
     {
-        for (int i = 0; i < winnersList.Count; i++)
+        float startY = 700f; // Starting Y position
+        float spaceBetween = 80f; // Space between dropdowns
+        //float width = 700f;
+        //float height = 80f;
+
+    for (int i = 0; i < nbMovies; i++)
+    {
+        // Calculate the Y position for this clone
+        float positionY = startY - (i * spaceBetween);
+
+        // Instantiate a new GameObject from the "Rank1" prefab
+        GameObject rankClone = Instantiate(rankPrefab, Vector3.zero, Quaternion.identity) as GameObject;
+        rankClone.name = "Rank" + (i + 1); // Naming it Rank1, Rank2, etc.
+        rankClone.transform.SetParent(RankingCanvas.transform, false);
+
+        // Configure the Dropdown component within the Rank1 clone if needed
+        Dropdown dropdown = rankClone.GetComponentInChildren<Dropdown>();
+        if (dropdown != null)
         {
-            // Instantiate a new Dropdown
-            GameObject dropdownGO = new GameObject("Dropdown" + i);
-            RectTransform dropdownTransform = dropdownGO.AddComponent<RectTransform>();
-            dropdownTransform.SetParent(transform); // Parent it to the MultiVoting script's GameObject
-            dropdownTransform.anchoredPosition = new Vector2(0, 700 - i * 80); // Adjust as needed
-            dropdownTransform.sizeDelta = new Vector2(700, 80); // Adjust as needed
-
-            Dropdown dropdown = dropdownGO.AddComponent<Dropdown>();
-
-            // Create a new text component for the ranking number
-            TextMeshProUGUI rankingNumberText = new GameObject("RankingNumber" + i).AddComponent<TextMeshProUGUI>();
-            rankingNumberText.transform.SetParent(dropdownGO.transform);
-            rankingNumberText.text = (i + 1).ToString(); // Display the ranking number
-            rankingNumberText.alignment = TextAlignmentOptions.Center;
-            rankingNumberText.fontSize = 30;
-
-            // Add a Clear Button next to the dropdown
-            Button clearButton = new GameObject("ClearButton" + i).AddComponent<Button>();
-            RectTransform clearButtonTransform = clearButton.GetComponent<RectTransform>();
-            clearButtonTransform.SetParent(dropdownGO.transform);
-            clearButtonTransform.anchoredPosition = new Vector2(600, 0); // Adjust as needed
-            clearButtonTransform.sizeDelta = new Vector2(100, 30);
-
-            TextMeshProUGUI buttonText = new GameObject("ClearButtonText" + i).AddComponent<TextMeshProUGUI>();
-            buttonText.transform.SetParent(clearButton.transform);
-            buttonText.text = "Clear";
-            buttonText.alignment = TextAlignmentOptions.Center;
-            buttonText.fontSize = 30;
-            buttonText.rectTransform.sizeDelta = new Vector2(100, 30);
-            clearButton.onClick.AddListener(() => ClearDropdown(dropdown));
-
-            // Populate dropdown options with movie titles
+            // Configure the dropdown options, listeners, etc.
             PopulateDropdownOptions(dropdown, i);
-
-            // Add listener for dropdown value changes
             dropdown.onValueChanged.AddListener(delegate { OnDropdownValueChanged(dropdown); });
-
-            // Keep track of dropdown instances
-            movieDropdowns.Add(i, dropdown);
         }
 
-        // Add a global Clear All Button
-        Button clearAllButton = new GameObject("ClearAllButton").AddComponent<Button>();
-        RectTransform clearAllButtonTransform = clearAllButton.GetComponent<RectTransform>();
-        clearAllButtonTransform.SetParent(transform);
-        clearAllButtonTransform.anchoredPosition = new Vector2(600, -990); // Adjust as needed
-        clearAllButtonTransform.sizeDelta = new Vector2(100, 30);
-
-        TextMeshProUGUI clearAllButtonText = new GameObject("ClearAllButtonText").AddComponent<TextMeshProUGUI>();
-        clearAllButtonText.transform.SetParent(clearAllButton.transform);
-        clearAllButtonText.text = "Clear All";
-        clearAllButtonText.alignment = TextAlignmentOptions.Center;
-        clearAllButtonText.fontSize = 30;
-        clearAllButton.onClick.AddListener(ClearAllDropdowns);
+        // Other configurations specific to the "Rank1" prefab can be set here
+    }
     }
 
+    void OnDropdownValueChanged(Dropdown changedDropdown)
+    {
+        // Update user preferences
+        int movieIndex = movieDropdowns.FirstOrDefault(x => x.Value == changedDropdown).Key;
+        userPreferences[movieIndex] = changedDropdown.value;
+
+        // Repopulate all dropdowns
+        foreach (var dropdown in movieDropdowns)
+        {
+            PopulateDropdownOptions(dropdown.Value, dropdown.Key);
+        }
+    }
 
 
     void ClearDropdown(Dropdown dropdown)
     {
         // Clear the selected option in the dropdown
         dropdown.value = 0;
+        dropdown.RefreshShownValue(); // Update the shown value immediately
     }
 
     void ClearAllDropdowns()
@@ -245,38 +247,43 @@ public class MultiVoting : MonoBehaviour
         }
     }
 
-
     void PopulateDropdownOptions(Dropdown dropdown, int movieIndex)
     {
-        // Ensure you have access to movieDetailsList or adjust based on your data structure
-        if (movieDetailsList.Count > movieIndex)
-        {
-            MovieDetails movieDetails = movieDetailsList[movieIndex];
-            dropdown.options.Clear();
+        var selectedTitles = new HashSet<string>(movieDropdowns.Where(d => d.Value != dropdown)
+                                            .Select(d => d.Value.options[d.Value.value].text)
+                                            .Where(t => !string.IsNullOrEmpty(t) && t != "Select a movie"));
 
-            // Add movie titles to dropdown options
-            foreach (var genre in movieDetails.genres)
+        dropdown.options.Clear();
+        dropdown.options.Add(new Dropdown.OptionData("Select a movie"));
+
+        foreach (var movieDetails in movieDetailsList)
+        {
+            if (!selectedTitles.Contains(movieDetails.title))
             {
-                dropdown.options.Add(new Dropdown.OptionData(genre.name));
+                dropdown.options.Add(new Dropdown.OptionData(movieDetails.title));
             }
         }
-    }
 
-    void OnDropdownValueChanged(Dropdown dropdown)
-    {
-        // Get the movie index associated with this dropdown
-        int movieIndex = movieDropdowns.FirstOrDefault(x => x.Value == dropdown).Key;
-
-        // Update user preferences
+        // Ensure the current value is correctly set
+        dropdown.value = 0;
         if (userPreferences.ContainsKey(movieIndex))
         {
-            userPreferences[movieIndex] = dropdown.value;
+            var currentSelection = movieDetailsList[userPreferences[movieIndex]].title;
+            for (int i = 0; i < dropdown.options.Count; i++)
+            {
+                if (dropdown.options[i].text == currentSelection)
+                {
+                    dropdown.value = i;
+                    break;
+                }
+            }
         }
-        else
-        {
-            userPreferences.Add(movieIndex, dropdown.value);
-        }
+
+        dropdown.RefreshShownValue();
     }
+
+
+
 
     public void OnClickSubmitButton()
     {

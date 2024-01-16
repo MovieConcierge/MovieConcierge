@@ -227,7 +227,6 @@ public class WaitGenerator : MonoBehaviourPunCallbacks
 
     public override void OnRoomPropertiesUpdate(ExitGames.Client.Photon.Hashtable propertiesThatChanged)
     {
-        Debug.Log("WAITROOM OnRoomPropertiesUpdate");
         // Check if the "Winners" custom property has changed
         if (propertiesThatChanged.ContainsKey("Winners"))
         {
