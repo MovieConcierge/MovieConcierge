@@ -35,11 +35,6 @@ public class MovieDisplay : MonoBehaviour
             movieTitle.GetComponent<TextMeshProUGUI>().text = newTitle;
             moviePoster.GetComponent<Image>().sprite = CreateSpriteFromTexture(newPosterTexture, moviePoster.GetComponent<RectTransform>());
         }
-        else
-        {
-            Debug.Log("game objects are destroyed MovieDisplay (happens in waitingRoom)");
-        }
-
     }
 
 

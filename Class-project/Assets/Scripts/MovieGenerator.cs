@@ -20,8 +20,9 @@ public class MovieGenerator : MonoBehaviour
     private int currentMovieId;
     public delegate void TextureFetchedAction();
     public static event TextureFetchedAction OnTextureFetched;
-    public int NumberOfPages = 3; //20 movies per page
+    private int NumberOfPages; //20 movies per page
     public int MaxLikedMovies = 8;
+    private string delimiter;
 
     public static event System.Action OnVotingStartRequested;
     private VotingSystem votingSystem;
@@ -34,6 +35,9 @@ public class MovieGenerator : MonoBehaviour
     IEnumerator Start()
     {
         PhotonNetwork.AutomaticallySyncScene = false;//Players are independent now
+        NumberOfPages = PlayerPrefs.GetInt("NumberOfPages", 3);
+        bool useFlexibleMatching = PlayerPrefs.GetInt("FlexibleGenreMatching", 0) == 1;
+        delimiter = useFlexibleMatching ? "|" : ",";
 
         if (string.IsNullOrEmpty(apiKey))
         {
@@ -49,12 +53,11 @@ public class MovieGenerator : MonoBehaviour
     #region TMDB API Info Fetching
     IEnumerator FetchPopularMovieIds(int pageCount)
     {
-        string selectedGenresString = string.Join(",", selectedGenres);
+        string selectedGenresString = string.Join(delimiter, selectedGenres);
         for (int page = 1; page <= pageCount; page++)
         {
             
             string apiUrl = $"https://api.themoviedb.org/3/discover/movie?api_key={apiKey}&language=en-US&sort_by=popularity.desc&page={page}&with_genres={selectedGenresString}";
-
             using (UnityWebRequest request = UnityWebRequest.Get(apiUrl))
             {
                 yield return request.SendWebRequest();

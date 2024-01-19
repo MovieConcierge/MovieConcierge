@@ -20,7 +20,7 @@ public class WaitGenerator : MonoBehaviourPunCallbacks
     private int winnerId;
     private int eventwinnerId;
     private bool multiGame;
-
+    private bool sceneLoadingInitiated = false;
     public List<int> winners = new List<int>();
 
 
@@ -201,13 +201,10 @@ public class WaitGenerator : MonoBehaviourPunCallbacks
         if (photonEvent.Code == 159)
         {
             int eventwinnerId = (int)photonEvent.CustomData;
-            if (!winners.Contains(eventwinnerId))
-            {
-                winners.Add(eventwinnerId);
+            winners.Add(eventwinnerId);
 
-                // Update the custom property on the Photon room
-                UpdateWinnersCustomProperty();
-            }
+            // Update the custom property on the Photon room
+            UpdateWinnersCustomProperty();
         }
     }
 
@@ -223,8 +220,11 @@ public class WaitGenerator : MonoBehaviourPunCallbacks
 
     public override void OnRoomPropertiesUpdate(ExitGames.Client.Photon.Hashtable propertiesThatChanged)
     {
+        // The original method gets executed before my additional changes
+        base.OnRoomPropertiesUpdate(propertiesThatChanged);
+
         // Check if the "Winners" custom property has changed
-        if (propertiesThatChanged.ContainsKey("Winners"))
+        if (!sceneLoadingInitiated && propertiesThatChanged.ContainsKey("Winners"))
         {
             // Extract the updated winners string and update the local list
             string winnersString = (string)propertiesThatChanged["Winners"];
@@ -232,14 +232,44 @@ public class WaitGenerator : MonoBehaviourPunCallbacks
 
             if (winners.Count == PhotonNetwork.CurrentRoom.PlayerCount)
             {
-                //Remove duplicates
-                winners = winners.Distinct().ToList();
-                winnersString = string.Join(",", winners.Select(w => w.ToString()).ToArray());
-                PhotonNetwork.CurrentRoom.SetCustomProperties(new ExitGames.Client.Photon.Hashtable { {"Winners", winnersString} });
+                // Lock the room as the multiVoting process is going to start
+                PhotonNetwork.CurrentRoom.IsOpen = false;
+                sceneLoadingInitiated = true;
 
                 PhotonNetwork.LoadLevel("MultiVoting");
             }
         }
     }
+
+    new void OnDisable()
+    {
+        base.OnDisable();
+
+        // Unsubscribe from Photon network events
+        PhotonNetwork.NetworkingClient.EventReceived -= OnPhotonEvent;
+
+        // Stop all coroutines that might be running
+        StopAllCoroutines();
+
+        // Clear or reset any data structures that should not persist
+        winners.Clear();
+        selectedGenres.Clear();
+
+        // Reset any static or singleton-like data if necessary
+        // For example, if MovieDisplay or PopUpManager holds onto data that should be cleared
+        // (Note: Adjust based on your actual implementation)
+        if (MovieDisplay.newPosterTexture != null) {
+            Destroy(MovieDisplay.newPosterTexture);
+            MovieDisplay.newPosterTexture = null;
+        }
+        PopUpManager.newGenres = "";
+        PopUpManager.newOverview = "";
+
+        // Reset other flags or states as necessary
+        sceneLoadingInitiated = false;
+
+        // If you have other cleanup tasks specific to your script, include them here
+    }
+
     #endregion
 }

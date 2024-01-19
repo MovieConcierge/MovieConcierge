@@ -23,12 +23,15 @@ public class VotingSystem : MonoBehaviour
     public GameObject movieAGenres;
     public GameObject movieAPoster;
     public GameObject movieAOverview;
+    public ScrollRect scrollRectA;
     public Button movieAButton;
 
     public GameObject movieBTitle;
     public GameObject movieBGenres;
     public GameObject movieBPoster;
     public GameObject movieBOverview;
+    public ScrollRect scrollRectB;
+    
     public Button movieBButton;
 
     private bool multiGame;
@@ -226,6 +229,7 @@ public class VotingSystem : MonoBehaviour
     void SetMovieUI(MovieDetails movieA, MovieDetails movieB)
     {
         movieATitle.GetComponent<TextMeshProUGUI>().text = movieA.title;
+        scrollRectA.normalizedPosition = new Vector2(0, 1);
         movieAOverview.GetComponent<TextMeshProUGUI>().text = movieA.overview;
         movieAGenres.GetComponent<TextMeshProUGUI>().text = ConvertGenresToString(movieA.genres);
 
@@ -235,6 +239,7 @@ public class VotingSystem : MonoBehaviour
         }));
 
         movieBTitle.GetComponent<TextMeshProUGUI>().text = movieB.title;
+        scrollRectB.normalizedPosition = new Vector2(0, 1);
         movieBOverview.GetComponent<TextMeshProUGUI>().text = movieB.overview;
         movieBGenres.GetComponent<TextMeshProUGUI>().text = ConvertGenresToString(movieB.genres);
 
@@ -244,11 +249,10 @@ public class VotingSystem : MonoBehaviour
         }));
     }
 
-    public void OnClickStopButton()
+    public void OnClickReturnMenu()
     {
         SceneManager.LoadScene("Title");    
     }
-
 
 
     IEnumerator FetchTexture(string url, Action<Texture> callback)

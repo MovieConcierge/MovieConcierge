@@ -1,20 +1,41 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class GenreSettings : MonoBehaviour
 {
+    public Canvas mainScreenCanvas;
+    public Canvas genresCanvas;
     public Toggle[] genreToggles; // Assign toggles in the Inspector
     public Button confirmButton;
-
+    public Button selectAllButton;
+    public Toggle flexibleGenreMatchingToggle;
+    public TMP_InputField numberOfPages;
     private List<string> selectedGenres = new List<string>();
 
     private void Start()
     {
+        ShowMainScreen();
+
+        selectAllButton.onClick.AddListener(ToggleAllGenres);
         confirmButton.onClick.AddListener(OnConfirmButtonClicked);
     }
 
-    private void OnConfirmButtonClicked()
+    public void ShowGenres()
+    {
+        mainScreenCanvas.gameObject.SetActive(false);
+        genresCanvas.gameObject.SetActive(true);
+    }
+
+    public void ShowMainScreen()
+    {
+        mainScreenCanvas.gameObject.SetActive(true);
+        genresCanvas.gameObject.SetActive(false);
+    }
+
+    public void OnConfirmButtonClicked()
     {
         // Collect selected genres
         selectedGenres.Clear();
@@ -23,7 +44,6 @@ public class GenreSettings : MonoBehaviour
         {
             if (toggle.isOn)
             {
-                // Assuming toggle text is the genre name
                 string genreName = toggle.GetComponentInChildren<Text>().text;
 
                 // Map the genre name to its ID
@@ -33,9 +53,18 @@ public class GenreSettings : MonoBehaviour
                 }
             }
         }
-        Debug.Log(selectedGenres.Count);
+        PlayerPrefs.SetInt("FlexibleGenreMatching", flexibleGenreMatchingToggle.isOn ? 1 : 0);
 
-        // Now, you can save the selectedGenres list using PlayerPrefs or perform any other actions.
+        int numberOfPagesInt; 
+        if(int.TryParse(numberOfPages.text, out numberOfPagesInt))
+        {
+            PlayerPrefs.SetInt("NumberOfPages", numberOfPagesInt);
+        }
+        else
+        {
+            // Use 3 as the default number of pages to browse
+            PlayerPrefs.SetInt("NumberOfPages", 3);
+        }
         SaveSelectedGenres();
     }
 
@@ -51,6 +80,20 @@ public class GenreSettings : MonoBehaviour
         {
             string selectedGenresString = "";
             PlayerPrefs.SetString("SelectedGenres", selectedGenresString);  
+        }
+        ShowMainScreen();
+    }
+
+    private void ToggleAllGenres()
+    {
+        // Check if all toggles are currently on
+        bool allTogglesAreOn = genreToggles.All(toggle => toggle.isOn);
+
+        // Set all toggles to true if any toggle is off, otherwise set all to false
+        bool newToggleState = !allTogglesAreOn;
+        foreach (Toggle toggle in genreToggles)
+        {
+            toggle.isOn = newToggleState;
         }
     }
 

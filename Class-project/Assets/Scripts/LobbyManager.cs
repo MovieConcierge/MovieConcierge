@@ -79,7 +79,9 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         if (string.IsNullOrEmpty(createdLobbyNameInput.text))
         {
             Debug.LogError("Lobby name cannot be empty. Please enter a valid lobby name.");
-            // Provide feedback to the user or take appropriate action.
+
+            createRoomButton.interactable = true;
+            joinRoomButton.interactable = true;
             return;
         }
 
@@ -102,7 +104,9 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         if (string.IsNullOrEmpty(joinedLobbyNameInput.text))
         {
             Debug.LogError("Lobby name cannot be empty. Please enter a valid lobby name.");
-            // Provide feedback to the user or take appropriate action.
+
+            createRoomButton.interactable = true;
+            joinRoomButton.interactable = true;
             return;
         }
         RoomName.GetComponent<TextMeshProUGUI>().text = "Room: " + joinedLobbyNameInput.text;
@@ -115,6 +119,16 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     {
         Debug.LogError($"Room creation failed: {message}");
         // Handle the failure (e.g., show an error message to the user)
+        createRoomButton.interactable = true;
+        joinRoomButton.interactable = true;
+    }
+
+    public override void OnJoinRoomFailed(short returnCode, string message)
+    {
+        Debug.LogError("Failed to join room: " + message);
+        // Provide feedback to the user or take appropriate action, such as prompting to create the room
+        createRoomButton.interactable = true;
+        joinRoomButton.interactable = true;
     }
 
     public void OnClickStartButton()
@@ -143,9 +157,10 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     public void OnClickLeaveRoomButton()
     {
+        leaveRoomButton.interactable = false;
         if (PhotonNetwork.InRoom)
         {
-            if (PhotonNetwork.IsMasterClient && PhotonNetwork.CurrentRoom.PlayerCount >= 1) MigrateMaster();
+            if (PhotonNetwork.IsMasterClient && PhotonNetwork.CurrentRoom.PlayerCount > 1) MigrateMaster();
             else
             {
                 PhotonNetwork.DestroyPlayerObjects(PhotonNetwork.LocalPlayer);
@@ -157,12 +172,24 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     public void MigrateMaster()
     {
         var dict = PhotonNetwork.CurrentRoom.Players;
-        if (PhotonNetwork.SetMasterClient(dict[dict.Count - 1]))
-            PhotonNetwork.LeaveRoom();
+
+        // Find the next player to set as master client
+        foreach (var player in dict.Values)
+        {
+            if (!player.IsLocal)
+            {
+                if (PhotonNetwork.SetMasterClient(player))
+                {
+                    break;
+                }
+            }
+        }
     }
+
 
     public override void OnLeftRoom()
     {
+        leaveRoomButton.interactable = true;
         roomCanvas.gameObject.SetActive(false);
         lobbyCanvas.gameObject.SetActive(true);
 

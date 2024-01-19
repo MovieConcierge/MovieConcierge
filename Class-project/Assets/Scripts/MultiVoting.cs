@@ -26,23 +26,39 @@ public class MultiVoting : MonoBehaviour
     public Sprite ClearButtonSprite;
     public GameObject firstRankItem; // Assign this in the editor
     int nbMovies; 
-
     public Button submitButton; // Assign this in the editor
+    public Button goRank;
     public TextMeshProUGUI feedbackText; // Assign a TextMeshProUGUI object in the editor
     List<int> selectedMovieIds = new List<int>();
     List<List <int>> playerMovieRankings = new List<List <int>> ();
     private List<int> grandWinners;
+    public GameObject grandWinnersText;
+    public Button playAgain;
+    public Button nextMovie;
+    public Button previousMovie;
+
     void Start()
     {
-        if (PhotonNetwork.IsMasterClient)
-        {
-            PhotonNetwork.NetworkingClient.EventReceived += OnReceivePlayerRanking;
-        }
+        PhotonNetwork.NetworkingClient.EventReceived += OnPhotonEvent;
+
         // Initialize winnersList with movie IDs (populate it with actual data)
         string winnersString = (string)PhotonNetwork.CurrentRoom.CustomProperties["Winners"];
         winnersList = winnersString.Split(',').Select(int.Parse).ToList();
+        winnersList = winnersList.Distinct().ToList(); // Remove duplicates
 
         nbMovies = winnersList.Count;
+
+        // If there's only one winner, no need for arrows
+        if (nbMovies == 1)
+        {
+            // Assuming you have references to your next and previous buttons
+            nextMovie.gameObject.SetActive(false);
+            previousMovie.gameObject.SetActive(false);
+            goRank.gameObject.SetActive(false);
+
+            grandWinnersText.gameObject.SetActive(true);
+            grandWinnersText.GetComponent<TextMeshProUGUI>().text = "All of you chose the same movie! Grand Winner:";
+        }
         // Fetch details for the winnersList
         StartCoroutine(FetchMovieDetails(winnersList));
     }
@@ -50,19 +66,27 @@ public class MultiVoting : MonoBehaviour
     {
         // Display the first movie
         DisplayMovie();
-
-        onClickGoRank(); //Go to the ranking canvas to setup the dropdowns
-        InstantiateDropdowns();
-        foreach (var dropdownPair in movieDropdowns)
+        if (!grandWinnersText.gameObject.activeSelf)
         {
-            dropdownPair.Value.onValueChanged.AddListener(delegate { OnDropdownValueChanged(dropdownPair.Value); });
+            onClickGoRank();
+            InstantiateDropdowns();
         }
-        // Populate each dropdown initially
-        foreach (var dropdownPair in movieDropdowns)
+        else
         {
-            PopulateDropdownOptions(dropdownPair.Value, dropdownPair.Key);
+            if (grandWinners.Count > 1)
+            {
+                grandWinnersText.GetComponent<TextMeshProUGUI>().text = grandWinners.Count.ToString() + " Winners \n press the 'One winner only' button to rank again" ;
+                playAgain.gameObject.SetActive(true);
+            }
+            else
+            {
+                grandWinnersText.GetComponent<TextMeshProUGUI>().text = "Grand Winner:";
+                nextMovie.gameObject.SetActive(false);
+                previousMovie.gameObject.SetActive(false);
+            }
         }
     }
+
     #region Movie List Canvas methods
     int mod(int x, int m)  
     {
@@ -99,11 +123,12 @@ public class MultiVoting : MonoBehaviour
         // Assign the concatenated genres string to PopUpManager.newGenres
         PopUpManager.newGenres = ConvertGenresToString(genres);
         PopUpManager.newOverview = info;
-
     }
 
     IEnumerator FetchMovieDetails(List<int> movieIds)
     {
+        movieDetailsList.Clear();
+        yield return new WaitForSeconds(0.2f);
         foreach (int movieId in movieIds)
         {
             string apiUrl = $"https://api.themoviedb.org/3/movie/{movieId}?api_key={apiKey}&language=en-US";
@@ -188,8 +213,11 @@ public class MultiVoting : MonoBehaviour
     }
     public void onClickGoView()
     {
-        MovieViewCanvas.gameObject.SetActive(true);
-        RankingCanvas.gameObject.SetActive(false);
+        if (MovieViewCanvas != null && RankingCanvas != null)
+        {
+            MovieViewCanvas.gameObject.SetActive(true);
+            RankingCanvas.gameObject.SetActive(false);
+        }
     }
 
     #endregion
@@ -197,9 +225,7 @@ public class MultiVoting : MonoBehaviour
     {
         float startY = 67f; // Starting Y position
         float endY = -1167f; // Last possible Y position
-        float spaceBetween = Mathf.Min((endY - startY) / (nbMovies - 1), 400);
-
-        Vector3 prefabPosition = firstRankItem.transform.position; // Get the prefab's original position
+        float spaceBetween = Mathf.Min((startY - endY) / (nbMovies - 1), 400);
 
         for (int i = 0; i < nbMovies; i++)
         {
@@ -207,7 +233,7 @@ public class MultiVoting : MonoBehaviour
             float positionY = startY - (i * spaceBetween);
 
             // Use the prefab's x and z, and the new y for the position
-            Vector3 newPosition = new Vector3(prefabPosition.x, positionY, prefabPosition.z);
+            Vector3 newPosition = new Vector3(138, positionY, -44); //The original prefab's x and z position
 
             // Instantiate a new GameObject from the "Rank1" prefab
             GameObject rankClone = Instantiate(firstRankItem, newPosition, Quaternion.identity) as GameObject;
@@ -221,29 +247,12 @@ public class MultiVoting : MonoBehaviour
             // Configure the Dropdown component within the Rank1 clone if needed
             TMP_Dropdown dropdown = rankClone.GetComponentInChildren<TMP_Dropdown>();
             rankClone.gameObject.SetActive(true);
-            if (dropdown != null)
-            {
-                Debug.Log("populating dropdown i");
-                // Configure the dropdown options, listeners, etc.
-                PopulateDropdownOptions(dropdown, i);
-                dropdown.onValueChanged.AddListener(delegate { OnDropdownValueChanged(dropdown); });
-            }
+
+            movieDropdowns[i] = dropdown;
+            PopulateDropdownOptions(dropdown);
 
             Button clearButton = rankClone.transform.Find("Clear Button").GetComponent<Button>();
             clearButton.onClick.AddListener(delegate { ClearDropdown(dropdown); });
-        }
-    }
-
-    void OnDropdownValueChanged(TMP_Dropdown changedDropdown)
-    {
-        // Update user preferences
-        int movieIndex = movieDropdowns.FirstOrDefault(x => x.Value == changedDropdown).Key;
-        userPreferences[movieIndex] = changedDropdown.value;
-
-        // Repopulate all dropdowns
-        foreach (var dropdown in movieDropdowns)
-        {
-            PopulateDropdownOptions(dropdown.Value, dropdown.Key);
         }
     }
 
@@ -253,6 +262,7 @@ public class MultiVoting : MonoBehaviour
         // Clear the selected option in the dropdown
         dropdown.value = 0;
         dropdown.RefreshShownValue(); // Update the shown value immediately
+
     }
 
     void ClearAllDropdowns()
@@ -263,45 +273,26 @@ public class MultiVoting : MonoBehaviour
             dropdown.value = 0;
         }
     }
+    
 
-    void PopulateDropdownOptions(TMP_Dropdown dropdown, int movieIndex)
+    void PopulateDropdownOptions(TMP_Dropdown dropdown)
     {
-        var selectedTitles = new HashSet<string>(movieDropdowns.Where(d => d.Value != dropdown)
-                                            .Select(d => d.Value.options[d.Value.value].text)
-                                            .Where(t => !string.IsNullOrEmpty(t) && t != "Select a movie"));
-
         dropdown.options.Clear();
         dropdown.options.Add(new TMP_Dropdown.OptionData("Select a movie"));
 
         foreach (var movieDetails in movieDetailsList)
         {
-            if (!selectedTitles.Contains(movieDetails.title))
-            {
-                dropdown.options.Add(new TMP_Dropdown.OptionData(movieDetails.title));
-            }
+            dropdown.options.Add(new TMP_Dropdown.OptionData(movieDetails.title));
         }
 
-        // Ensure the current value is correctly set
-        dropdown.value = 0;
-        if (userPreferences.ContainsKey(movieIndex))
-        {
-            var currentSelection = movieDetailsList[userPreferences[movieIndex]].title;
-            for (int i = 0; i < dropdown.options.Count; i++)
-            {
-                if (dropdown.options[i].text == currentSelection)
-                {
-                    dropdown.value = i;
-                    break;
-                }
-            }
-        }
-
-        dropdown.RefreshShownValue();
     }
+
 
     public void onClickSubmitButton()
     {
+        selectedMovieIds.Clear();
         bool allDropdownsSelected = true;
+        var rankedMovieIds = new List<KeyValuePair<int, int>>(); // Temporary list to store rank and movie ID
 
         foreach (var movieDropdownPair in movieDropdowns)
         {
@@ -310,7 +301,8 @@ public class MultiVoting : MonoBehaviour
 
             if (selectedIndex > 0)
             {
-                selectedMovieIds.Add(movieDetailsList[selectedIndex - 1].id);
+                int movieId = movieDetailsList[selectedIndex - 1].id;
+                rankedMovieIds.Add(new KeyValuePair<int, int>(movieDropdownPair.Key, movieId));
             }
             else
             {
@@ -319,20 +311,30 @@ public class MultiVoting : MonoBehaviour
             }
         }
 
-        if (allDropdownsSelected && selectedMovieIds.Count == nbMovies)
+        // Sort the ranked movies by their rank
+        var sortedByRank = rankedMovieIds.OrderBy(pair => pair.Key).ToList();
+
+        // Add the sorted movie IDs to selectedMovieIds
+        foreach (var pair in sortedByRank)
+        {
+            selectedMovieIds.Add(pair.Value);
+        }
+
+        if (allDropdownsSelected && selectedMovieIds.Distinct().ToList().Count == nbMovies)
         {
             submitButton.interactable = false;
             // Send the list to the Photon room, potentially only to the Master Client
-            if (PhotonNetwork.IsMasterClient)
-            {
-                PhotonNetwork.RaiseEvent(113, selectedMovieIds.ToArray(), new RaiseEventOptions { Receivers = ReceiverGroup.MasterClient }, new ExitGames.Client.Photon.SendOptions { Reliability = true });
-            }
+            PhotonNetwork.RaiseEvent(113, selectedMovieIds.ToArray(), new RaiseEventOptions { Receivers = ReceiverGroup.MasterClient }, new ExitGames.Client.Photon.SendOptions { Reliability = true });
 
             foreach (var movieDropdownPair in movieDropdowns)
             {
                 // Disable dropdowns to keep the visual order of the votes
                 TMP_Dropdown dropdown = movieDropdownPair.Value;
                 dropdown.interactable = false;
+
+                Transform parentTransform = dropdown.transform.parent;
+                Button clearButton = parentTransform.Find("Clear Button")?.GetComponent<Button>();
+                clearButton.interactable = false;
             }   
         }
         else
@@ -349,13 +351,15 @@ public class MultiVoting : MonoBehaviour
         feedbackText.text = "Rank from most to least preferred"; // Clear the feedback message
     }
 
-
-    public void OnReceivePlayerRanking(ExitGames.Client.Photon.EventData photonEvent)
+    public void OnPhotonEvent(ExitGames.Client.Photon.EventData photonEvent)
     {
-        if (photonEvent.Code == 113)
+        //Only the masterclient computes the winner
+        if (photonEvent.Code == 113 && PhotonNetwork.IsMasterClient) 
         {
+            // A player submited a valid ranking
             // Store the rankings with the player's ID
-            playerMovieRankings.Add(selectedMovieIds);
+            int[] receivedMovieIds = (int[])photonEvent.CustomData;
+            playerMovieRankings.Add(receivedMovieIds.ToList());
 
             // Check if all players have submitted their rankings
             if (playerMovieRankings.Count == PhotonNetwork.PlayerList.Length)
@@ -363,9 +367,125 @@ public class MultiVoting : MonoBehaviour
                 // All players have submitted their rankings
                 RankedPairsVoting rankedPairs = new RankedPairsVoting();
                 grandWinners = rankedPairs.GetWinners(playerMovieRankings);
+
+                string grandWinnersString = string.Join(",", grandWinners.Select(w => w.ToString()).ToArray());
+                PhotonNetwork.RaiseEvent(77, grandWinnersString, new RaiseEventOptions { Receivers = ReceiverGroup.All }, new ExitGames.Client.Photon.SendOptions { Reliability = true });
             }
         }
+
+        if (photonEvent.Code == 77)
+        {
+            string grandWinnersString = (string)photonEvent.CustomData;
+            grandWinners = grandWinnersString.Split(',').Select(int.Parse).ToList();
+
+            var webFlags = new WebFlags(0x1); // WebFlags.HttpForward
+            PhotonNetwork.CurrentRoom.SetCustomProperties(new ExitGames.Client.Photon.Hashtable { {"Winners", grandWinnersString} }, null, webFlags);
+            onClickGoView();
+
+            grandWinnersText.gameObject.SetActive(true);
+            StartCoroutine(FetchMovieDetails(grandWinners));
+        }
     }
+
+    void OnDisable()
+    {
+        // Unsubscribe from the Photon event
+        PhotonNetwork.NetworkingClient.EventReceived -= OnPhotonEvent;
+
+        // Stop all coroutines started by this script
+        StopAllCoroutines();
+
+        // Clear movie details list and other collections if necessary
+        movieDetailsList.Clear();
+        selectedMovieIds.Clear();
+        playerMovieRankings.Clear();
+
+        // If you have any other cleanup tasks, like resetting static variables or 
+        // other data that should not persist when this script is disabled, 
+        // include them here
+
+        // If you are dynamically creating UI elements or other GameObjects, 
+        // you should also make sure they are properly destroyed or disabled here
+        foreach (var dropdownPair in movieDropdowns)
+        {
+            if (dropdownPair.Value != null)
+            {
+                Destroy(dropdownPair.Value.gameObject);
+            }
+        }
+        movieDropdowns.Clear();
+
+        // Reset UI elements if necessary
+        if (feedbackText != null)
+        {
+            feedbackText.text = "Grand winner:";
+        }
+
+        // Additional cleanup logic as needed
+    }
+    #region Reset Game
+    IEnumerator ResetGame()
+    {
+        Debug.Log("reset started");
+        // Stop all coroutines
+
+        // Clear existing data
+        movieDetailsList.Clear();
+        selectedMovieIds.Clear();
+        playerMovieRankings.Clear();
+
+        // Reset currentIndex to the start
+        currentIndex = 0;
+
+        // Reset the state of any other game-specific variables
+        // ...
+
+        // Destroy the parent GameObjects of the dropdowns
+        foreach (var dropdownPair in movieDropdowns)
+        {
+            if (dropdownPair.Value != null)
+            {
+                // Destroy the parent of the dropdown
+                GameObject parentObject = dropdownPair.Value.transform.parent.gameObject;
+                Destroy(parentObject);
+            }
+        }
+        yield return null; // Wait for the end of the frame
+        // Reset the Canvas states
+        onClickGoRank();
+
+        // Any other initialization logic that was in the Start method
+        string winnersString = (string)PhotonNetwork.CurrentRoom.CustomProperties["Winners"];
+        winnersList = winnersString.Split(',').Select(int.Parse).ToList();
+        winnersList = winnersList.Distinct().ToList(); // Remove duplicates
+
+        nbMovies = winnersList.Count;
+
+        yield return null;
+        
+        // Reinitialize UI elements
+        InstantiateDropdowns();
+
+        // Reset other UI elements to their default state
+        feedbackText.text = "Rank from most to least preferred";
+        submitButton.interactable = true;
+        nextMovie.gameObject.SetActive(grandWinners.Count > 1); // Enable nextMovie button if more than one movie
+        previousMovie.gameObject.SetActive(grandWinners.Count > 1); // Enable previousMovie button if more than one movie
+        grandWinnersText.gameObject.SetActive(false); // Hide grand winners text
+
+        yield return new WaitForSeconds(0.5f);
+        StartCoroutine(FetchMovieDetails(winnersList));
+    }
+
+    // Modified onClickPlayAgain method
+    public void onClickPlayAgain()
+    {
+        playAgain.gameObject.SetActive(false);
+        StartCoroutine(ResetGame());
+    }
+    #endregion
+
+
     public class RankedPairsVoting
     {
         private Dictionary<int, Dictionary<int, int>> CalculatePairwisePreferences(List<List<int>> playerMovieRankings)
