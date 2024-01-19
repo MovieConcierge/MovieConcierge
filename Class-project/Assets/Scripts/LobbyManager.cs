@@ -113,8 +113,6 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         PhotonNetwork.JoinRoom(joinedLobbyNameInput.text);
     }
 
-
-
     public override void OnCreateRoomFailed(short returnCode, string message)
     {
         Debug.LogError($"Room creation failed: {message}");

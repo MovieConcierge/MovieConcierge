@@ -422,6 +422,7 @@ GameObject:
   - component: {fileID: 159184318}
   - component: {fileID: 159184321}
   - component: {fileID: 159184320}
+  - component: {fileID: 159184322}
   m_Layer: 5
   m_Name: MoviePoster
   m_TagString: Untagged
@@ -486,6 +487,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 159184317}
   m_CullTransparentMesh: 0
+--- !u!114 &159184322
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 159184317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ea841d82d7792047a484e114294f82d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  swipeThreshold: 50
+  xCoordinateLimit: 0
 --- !u!1 &210713375
 GameObject:
   m_ObjectHideFlags: 0
