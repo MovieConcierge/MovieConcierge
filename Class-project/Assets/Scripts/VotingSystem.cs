@@ -36,7 +36,6 @@ public class VotingSystem : MonoBehaviour
 
     private bool multiGame;
     private MovieGenerator movieGenerator; // Reference to the MovieGenerator script
-    public LobbyManager lobbyManager;
 
     void Start()
     {

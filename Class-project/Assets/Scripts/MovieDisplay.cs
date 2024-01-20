@@ -6,7 +6,9 @@ using TMPro;
 
 public class MovieDisplay : MonoBehaviour
 {
+    public GameObject movieTitlePanel;
     public GameObject movieTitle;
+
     public GameObject moviePoster;
     public static string newTitle;
     public static Texture2D newPosterTexture;
@@ -30,9 +32,10 @@ public class MovieDisplay : MonoBehaviour
 
     void DisplayMovie()
     {
-        if (movieTitle != null & moviePoster != null)
+        if (movieTitlePanel != null & moviePoster != null & movieTitle)
         {
             moviePoster.SetActive(true);
+            movieTitlePanel.GetComponent<TextMeshProUGUI>().text = newTitle;
             movieTitle.GetComponent<TextMeshProUGUI>().text = newTitle;
             moviePoster.GetComponent<Image>().sprite = CreateSpriteFromTexture(newPosterTexture, moviePoster.GetComponent<RectTransform>());
         }

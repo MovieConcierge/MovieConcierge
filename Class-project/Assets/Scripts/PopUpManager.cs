@@ -15,10 +15,18 @@ public class PopUpManager : MonoBehaviour
 
     public void ShowPopUp()
     {
-        Genres.GetComponent<TextMeshProUGUI>().text = newGenres;
-        Genresbtn.GetComponent<TextMeshProUGUI>().text = newGenres;
-        Overview.GetComponent<TextMeshProUGUI>().text = newOverview;
-
+        if (Genres != null)
+        {
+            Genres.GetComponent<TextMeshProUGUI>().text = newGenres;
+        }
+        if (Genresbtn != null)
+        {
+            Genresbtn.GetComponent<TextMeshProUGUI>().text = newGenres;
+        }
+        if (Overview != null)
+        {
+            Overview.GetComponent<TextMeshProUGUI>().text = newOverview;
+        }
 
         popUpPanel.SetActive(true);
     }
