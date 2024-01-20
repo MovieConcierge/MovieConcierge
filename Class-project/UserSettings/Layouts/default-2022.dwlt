@@ -19,7 +19,7 @@ MonoBehaviour:
     width: 1920
     height: 997
   m_ShowMode: 4
-  m_Title: Project
+  m_Title: Hierarchy
   m_RootView: {fileID: 7}
   m_MinSize: {x: 875, y: 321}
   m_MaxSize: {x: 10000, y: 10000}
@@ -457,7 +457,7 @@ MonoBehaviour:
   m_ListAreaState:
     m_SelectedInstanceIDs: 
     m_LastClickedInstanceID: 0
-    m_HadKeyboardFocusLastEvent: 1
+    m_HadKeyboardFocusLastEvent: 0
     m_ExpandedInstanceIDs: c6230000865e0000545c000086410100045d0000fa6000003e960000f0c40000f6c40000fcc40000826f000000000000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
@@ -572,7 +572,7 @@ MonoBehaviour:
       scrollPos: {x: 0, y: 0}
       m_SelectedIDs: 
       m_LastClickedID: 0
-      m_ExpandedIDs: 0685ffff5685ffff5288ffff5e88ffff7288ffff8288ffffa488ffff9493ffffe893ffffe496fffff096ffff0497ffff1497ffff3697ffff0a9effff4ea5ffffa2a5ffffa2a8ffffb2a8ffffcaa8ffffdea8ffff04a9ffff40e7ffff82e9ffff12ebffff98f0ffffd4f4ffff28fbffff9c7a0000047b00008e7c0000f67c0000a88100006c8700009a870000a4870000f8870000
+      m_ExpandedIDs: 28fbffff
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -965,9 +965,9 @@ MonoBehaviour:
   m_PlayAudio: 0
   m_AudioPlay: 0
   m_Position:
-    m_Target: {x: 481.23425, y: 1025.5771, z: 228.893}
+    m_Target: {x: 540.45917, y: 634.8221, z: 217.36615}
     speed: 2
-    m_Value: {x: 481.23425, y: 1025.5771, z: 228.893}
+    m_Value: {x: 540.45917, y: 634.8221, z: 217.36615}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1015,15 +1015,15 @@ MonoBehaviour:
   m_Rotation:
     m_Target: {x: -0.013906379, y: -0.008538469, z: -0.00011876339, w: 0.99986404}
     speed: 2
-    m_Value: {x: -0.013906418, y: -0.008538493, z: -0.000118763724, w: 0.99986684}
+    m_Value: {x: 0.01390638, y: 0.008538469, z: 0.00011876339, w: -0.99986404}
   m_Size:
-    m_Target: 2006.142
+    m_Target: 1000.05725
     speed: 2
-    m_Value: 2006.142
+    m_Value: 1000.05725
   m_Ortho:
-    m_Target: 0
+    m_Target: 1
     speed: 2
-    m_Value: 0
+    m_Value: 1
   m_CameraSettings:
     m_Speed: 1
     m_SpeedNormalized: 0.5
