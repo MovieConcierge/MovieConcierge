@@ -37,7 +37,7 @@ public class SwipeLike : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDra
         if (canvas != null)
         {
             // Set the xCoordinateLimit to half the canvas width
-            xCoordinateLimit = canvas.GetComponent<RectTransform>().sizeDelta.x / 2;
+            xCoordinateLimit = canvas.GetComponent<RectTransform>().sizeDelta.x / 3;
         }
     }
 
@@ -49,7 +49,6 @@ public class SwipeLike : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDra
         likeStampTransform.anchoredPosition = prevLikeStamp;
         dislikeStampTransform.anchoredPosition = prevDislikeStamp;
     }
-
     public void OnDrag(PointerEventData eventData)
     {
         // Update the posterRectTransform position by the drag delta directly without smoothing
