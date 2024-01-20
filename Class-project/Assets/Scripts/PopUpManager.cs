@@ -6,6 +6,7 @@ public class PopUpManager : MonoBehaviour
 {
     public GameObject popUpPanel;
     public GameObject Genres;
+    public GameObject Genresbtn;
     public GameObject Overview;
     public static string newOverview;
     public static string newGenres;
@@ -15,6 +16,7 @@ public class PopUpManager : MonoBehaviour
     public void ShowPopUp()
     {
         Genres.GetComponent<TextMeshProUGUI>().text = newGenres;
+        Genresbtn.GetComponent<TextMeshProUGUI>().text = newGenres;
         Overview.GetComponent<TextMeshProUGUI>().text = newOverview;
 
 
