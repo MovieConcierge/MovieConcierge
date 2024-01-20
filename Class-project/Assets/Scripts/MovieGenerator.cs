@@ -137,6 +137,7 @@ public class MovieGenerator : MonoBehaviour
     {
         // Update the movie information using the fetched data
         MovieDisplay.newTitle = title;
+        MovieDisplay.newGenres = ConvertGenresToString(genres);
 
         // Construct the full poster URL using the TMDb base URL
         string posterUrl = $"https://image.tmdb.org/t/p/w500/{posterPath}";
@@ -146,6 +147,7 @@ public class MovieGenerator : MonoBehaviour
         // Assign the concatenated genres string to PopUpManager.newGenres
         PopUpManager.newGenres = ConvertGenresToString(genres);
         PopUpManager.newOverview = info;
+        PopUpManager.newTitle = title;
 
     }
 

@@ -6,33 +6,28 @@ public class PopUpManager : MonoBehaviour
 {
     public GameObject popUpPanel;
     public GameObject Genres;
-    public GameObject Genresbtn;
+    public GameObject movieTitlePanel;
+
     public GameObject Overview;
     public static string newOverview;
     public static string newGenres;
+    public static string newTitle;
     public Button infoButton;
     public ScrollRect scrollRect;
 
     public void ShowPopUp()
     {
-        if (Genres != null)
-        {
-            Genres.GetComponent<TextMeshProUGUI>().text = newGenres;
-        }
-        if (Genresbtn != null)
-        {
-            Genresbtn.GetComponent<TextMeshProUGUI>().text = newGenres;
-        }
-        if (Overview != null)
-        {
-            Overview.GetComponent<TextMeshProUGUI>().text = newOverview;
-        }
+        Genres.GetComponent<TextMeshProUGUI>().text = newGenres;
+        Overview.GetComponent<TextMeshProUGUI>().text = newOverview;
+        movieTitlePanel.GetComponent<TextMeshProUGUI>().text = newTitle;
 
+        infoButton.gameObject.SetActive(false);
         popUpPanel.SetActive(true);
     }
 
     public void ClosePopUp()
     {
+        infoButton.gameObject.SetActive(true);
         popUpPanel.SetActive(false);
 
         // Reset the scroll position for each ScrollRect referenced

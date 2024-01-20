@@ -90,6 +90,7 @@ public class WaitGenerator : MonoBehaviourPunCallbacks
     {
         // Update the movie information using the fetched data
         MovieDisplay.newTitle = title;
+        MovieDisplay.newGenres = ConvertGenresToString(genres);
 
         // Construct the full poster URL using the TMDb base URL
         string posterUrl = $"https://image.tmdb.org/t/p/w500/{posterPath}";
@@ -97,7 +98,7 @@ public class WaitGenerator : MonoBehaviourPunCallbacks
 
         // Assign the concatenated genres string to PopUpManager.newGenres
         PopUpManager.newGenres = ConvertGenresToString(genres);
-
+        PopUpManager.newTitle = title;
         PopUpManager.newOverview = info;
 
     }
@@ -164,7 +165,7 @@ public class WaitGenerator : MonoBehaviourPunCallbacks
             SceneTitle.GetComponent<TextMeshProUGUI>().text = "Movie Selected";
         }
 
-        SceneTitle.gameObject.SetActive(true);
+        SceneTitle.transform.parent.gameObject.SetActive(true);
         StartCoroutine(FetchMovieInformation(winnerId));
 
         yield return null;

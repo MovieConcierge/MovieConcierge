@@ -56,7 +56,7 @@ public class MultiVoting : MonoBehaviour
             previousMovie.gameObject.SetActive(false);
             goRank.gameObject.SetActive(false);
 
-            grandWinnersText.gameObject.SetActive(true);
+            grandWinnersText.transform.parent.gameObject.SetActive(true);
             grandWinnersText.GetComponent<TextMeshProUGUI>().text = "All of you chose the same movie! Grand Winner:";
         }
         // Fetch details for the winnersList
@@ -66,7 +66,7 @@ public class MultiVoting : MonoBehaviour
     {
         // Display the first movie
         DisplayMovie();
-        if (!grandWinnersText.gameObject.activeSelf)
+        if (!grandWinnersText.transform.parent.gameObject.activeSelf)
         {
             onClickGoRank();
             InstantiateDropdowns();
@@ -115,6 +115,7 @@ public class MultiVoting : MonoBehaviour
     {
         // Update the movie information using the fetched data
         MovieDisplay.newTitle = title;
+        MovieDisplay.newGenres = ConvertGenresToString(genres);
 
         // Construct the full poster URL using the TMDb base URL
         string posterUrl = $"https://image.tmdb.org/t/p/w500/{posterPath}";
@@ -123,6 +124,7 @@ public class MultiVoting : MonoBehaviour
         // Assign the concatenated genres string to PopUpManager.newGenres
         PopUpManager.newGenres = ConvertGenresToString(genres);
         PopUpManager.newOverview = info;
+        PopUpManager.newTitle = title;
     }
 
     IEnumerator FetchMovieDetails(List<int> movieIds)
@@ -382,7 +384,7 @@ public class MultiVoting : MonoBehaviour
             PhotonNetwork.CurrentRoom.SetCustomProperties(new ExitGames.Client.Photon.Hashtable { {"Winners", grandWinnersString} }, null, webFlags);
             onClickGoView();
 
-            grandWinnersText.gameObject.SetActive(true);
+            grandWinnersText.transform.parent.gameObject.SetActive(true);
             StartCoroutine(FetchMovieDetails(grandWinners));
         }
     }
@@ -426,7 +428,6 @@ public class MultiVoting : MonoBehaviour
     #region Reset Game
     IEnumerator ResetGame()
     {
-        Debug.Log("reset started");
         // Stop all coroutines
 
         // Clear existing data
@@ -440,6 +441,9 @@ public class MultiVoting : MonoBehaviour
         // Reset the state of any other game-specific variables
         // ...
 
+        // Reset the Canvas states
+        onClickGoRank();
+
         // Destroy the parent GameObjects of the dropdowns
         foreach (var dropdownPair in movieDropdowns)
         {
@@ -451,8 +455,6 @@ public class MultiVoting : MonoBehaviour
             }
         }
         yield return null; // Wait for the end of the frame
-        // Reset the Canvas states
-        onClickGoRank();
 
         // Any other initialization logic that was in the Start method
         string winnersString = (string)PhotonNetwork.CurrentRoom.CustomProperties["Winners"];
@@ -471,7 +473,7 @@ public class MultiVoting : MonoBehaviour
         submitButton.interactable = true;
         nextMovie.gameObject.SetActive(grandWinners.Count > 1); // Enable nextMovie button if more than one movie
         previousMovie.gameObject.SetActive(grandWinners.Count > 1); // Enable previousMovie button if more than one movie
-        grandWinnersText.gameObject.SetActive(false); // Hide grand winners text
+        grandWinnersText.transform.parent.gameObject.SetActive(false); // Hide grand winners text
 
         yield return new WaitForSeconds(0.5f);
         StartCoroutine(FetchMovieDetails(winnersList));
