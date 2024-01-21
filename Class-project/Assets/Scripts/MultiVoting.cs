@@ -440,6 +440,9 @@ public class MultiVoting : MonoBehaviour
         // Reset the state of any other game-specific variables
         // ...
 
+        // Reset the Canvas states
+        onClickGoRank();
+        
         // Destroy the parent GameObjects of the dropdowns
         foreach (var dropdownPair in movieDropdowns)
         {
@@ -451,8 +454,6 @@ public class MultiVoting : MonoBehaviour
             }
         }
         yield return null; // Wait for the end of the frame
-        // Reset the Canvas states
-        onClickGoRank();
 
         // Any other initialization logic that was in the Start method
         string winnersString = (string)PhotonNetwork.CurrentRoom.CustomProperties["Winners"];

@@ -55,7 +55,7 @@ public class LobbyManager : MonoBehaviourPunCallbacks
             connectButtonText.text = "Connecting...";
 
             // Start the connection attempt
-            PhotonNetwork.ConnectToRegion("jp");
+            PhotonNetwork.ConnectUsingSettings();
             connectButton.interactable = false;
             
         }

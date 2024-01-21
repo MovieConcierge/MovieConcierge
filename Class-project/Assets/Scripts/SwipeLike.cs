@@ -22,7 +22,7 @@ public class SwipeLike : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDra
         if (canvas != null)
         {
             // Set the xCoordinateLimit to half the canvas width
-            xCoordinateLimit = canvas.GetComponent<RectTransform>().sizeDelta.x / 2;
+            xCoordinateLimit = canvas.GetComponent<RectTransform>().sizeDelta.x / 3;
         }
     }
 
