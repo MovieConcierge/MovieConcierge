@@ -10,7 +10,7 @@ using Photon.Realtime;
 
 public class MovieGenerator : MonoBehaviour
 {
-    public string apiKey = "81e872ea74c4fe76eed2dd856b47223d"; // Replace with your TMDb API key
+    public string apiKey = "your_api_key"; // Replace with your TMDb API key
     public Canvas mainCanvas;
     public Canvas votingCanvas;
     private List<int> popularMovieIds = new List<int>();
